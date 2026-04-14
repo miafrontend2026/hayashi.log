@@ -151,20 +151,29 @@ body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans TC","Ping
 .daily-btn:hover{background:var(--ac2);color:#fff}
 .daily-btn.on{background:var(--ac2);color:#fff}
 @media(max-width:860px){
-  .hd-top{padding:0 10px;height:44px;gap:8px}
-  .hd-top h1{font-size:15px}
-  .hd-bar{padding:0 10px;height:32px;gap:5px}
-  .mode-pill,.tab-pill,.tool-pill{font-size:10px;padding:3px 10px}
+  .hd-top{padding:0 10px;height:42px;gap:6px}
+  .hd-top h1{font-size:14px}
+  .hd-top h1 span{font-size:11px}
+  .hd-top .sb{max-width:none;flex:1}
+  .hd-top .sb input{font-size:12px;padding:5px 10px 5px 28px;border-radius:16px}
   .stats{display:none}
-  .sd{transform:translateX(-100%);transition:.3s;width:250px;top:calc(44px + 32px);height:calc(100vh - 76px)}
+  .auth-area{margin-left:0}
+  .auth-btn{font-size:10px;padding:3px 8px;gap:3px}
+  .auth-btn img{width:16px;height:16px}
+  .logout-btn{font-size:9px;padding:2px 6px}
+  .hd-bar{padding:0 8px;height:30px;gap:4px}
+  .mode-pill,.tab-pill{font-size:10px;padding:2px 8px}
+  .tool-pill{font-size:10px;padding:2px 7px}
+  .hd-sep{height:14px}
+  .sd{transform:translateX(-100%);transition:.3s;width:250px}
   .sd.open{transform:translateX(0)}
-  .mn{margin-left:0;padding:92px 14px 60px}
+  .mn{margin-left:0;padding:84px 12px 60px}
   .ft{margin-left:0;padding:16px 12px;font-size:10px}
   .menu-btn{display:block}
   .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:85}
   .overlay.show{display:block}
-  .intro{padding:18px;margin-bottom:16px}
-  .intro h2{font-size:17px}
+  .intro{padding:16px;margin-bottom:14px}
+  .intro h2{font-size:16px}
   .intro p{font-size:12px}
   .cs{margin-bottom:20px}
   .cs>h2{font-size:15px;margin-bottom:10px}
@@ -176,20 +185,20 @@ body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans TC","Ping
   .gc .gx{padding:0 12px 12px}
   .cf-hd{padding:10px 12px;font-size:13px}
   .bt{bottom:16px;right:16px}
-  .auth-btn{font-size:10px;padding:3px 8px}
-  .logout-btn{font-size:9px;padding:2px 8px}
   .daily-bar{padding:10px 12px;gap:8px}
+  .daily-btn{padding:4px 10px;font-size:11px}
 }
 @media(max-width:480px){
-  .hd-top h1{font-size:14px}
-  .hd-top .sb{max-width:120px}
-  .hd-top .sb input{font-size:12px;padding:5px 10px 5px 28px}
-  .mn{padding:88px 10px 60px}
+  .hd-top{height:40px;gap:5px}
+  .hd-top h1{font-size:13px}
+  .hd-bar{gap:3px}
+  .mode-pill,.tab-pill{font-size:9px;padding:2px 7px}
+  .tool-pill{font-size:9px;padding:2px 6px}
+  .mn{padding:80px 10px 60px}
   .vg{grid-template-columns:1fr}
   .vi .vw{font-size:16px}
   .qmain{font-size:28px}
   .qopt{padding:10px;font-size:14px}
-  .auth-area{gap:4px}
 }
 /* Quiz/SRS overlay */
 .quiz-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}
@@ -298,11 +307,11 @@ body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans TC","Ping
     <div class="hd-sep"></div>
     <span id="tabsBar"></span>
     <div class="hd-sep"></div>
-    <button class="tool-pill" id="favBtn" onclick="toggleFavFilter()">★ 收藏</button>
+    <button class="tool-pill" id="favBtn" onclick="toggleFavFilter()">★</button>
     <button class="tool-pill" onclick="Quiz.start()">測驗</button>
     <button class="tool-pill" id="reviewBtn" onclick="SRS.start()">複習</button>
-    <button class="tool-pill" onclick="GrammarDrill.start()">文法練</button>
-    <a class="tool-pill" href="verbs.html" style="text-decoration:none">動詞變化</a>
+    <button class="tool-pill" onclick="GrammarDrill.start()">文法</button>
+    <a class="tool-pill" href="verbs.html" style="text-decoration:none">動詞</a>
     <button class="tool-pill" onclick="Stats.open()">統計</button>
   </div>
 </header>
@@ -458,7 +467,7 @@ function updateFavCount() {
   const btn = document.getElementById('favBtn');
   if (!btn) return;
   const c = (favorites[favKey()]||[]).length;
-  btn.textContent = c ? `★ ${c}` : '★ 收藏';
+  btn.textContent = c ? `★${c}` : '★';
 }
 
 // ========== STATE ==========
