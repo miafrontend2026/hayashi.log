@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>N5・N4 文法筆記 — 出口日語</title>
+<title>出口日語 N5～N2 備考筆記</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Noto+Serif+JP:wght@500;700&display=swap" rel="stylesheet">
@@ -13,7 +13,7 @@
 html{scroll-behavior:smooth;scroll-padding-top:calc(var(--hh)+24px)}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
 body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans TC","PingFang TC",-apple-system,sans-serif;background:var(--bg);color:var(--tx);line-height:1.7;font-size:15px}
-.hd{position:fixed;top:0;left:0;right:0;height:var(--hh);background:var(--sidebar);display:flex;align-items:center;padding:0 16px;z-index:100;gap:10px}
+.hd{position:fixed;top:0;left:0;right:0;min-height:var(--hh);background:var(--sidebar);display:flex;align-items:center;padding:0 16px;z-index:100;gap:8px;flex-wrap:wrap}
 .hd h1{color:#fff;font-size:16px;font-family:"Noto Serif JP",serif;font-weight:700;white-space:nowrap}
 .hd h1 span{color:var(--ac)}
 .tabs{display:flex;gap:4px;background:rgba(255,255,255,.08);border-radius:6px;padding:3px}
@@ -81,10 +81,10 @@ body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans TC","Ping
 .gc .ex .z{font-size:12px;color:var(--tx2);margin-top:1px}
 .gc .nt{margin-top:12px;padding:8px 12px;background:#FEF3C7;border-radius:5px;font-size:12px;color:#92400E;border-left:3px solid var(--ac);display:flex;align-items:flex-start;gap:6px}
 .gc .nt::before{content:"";display:inline-block;width:14px;height:14px;flex-shrink:0;margin-top:2px;background:currentColor;-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Ccircle cx='12' cy='12' r='10'/%3E%3Cpath d='M12 16v-4M12 8h.01'/%3E%3C/svg%3E") center/contain no-repeat}
-.bt{position:fixed;bottom:20px;right:20px;width:40px;height:40px;border-radius:50%;background:var(--ac);color:#fff;border:none;cursor:pointer;font-size:16px;box-shadow:0 2px 8px rgba(217,119,6,.3);opacity:0;transition:.3s ease-out;z-index:80;display:flex;align-items:center;justify-content:center}
+.bt{position:fixed;bottom:20px;right:20px;width:44px;height:44px;border-radius:50%;background:var(--ac);color:#fff;border:none;cursor:pointer;font-size:18px;box-shadow:0 2px 8px rgba(217,119,6,.3);opacity:0;pointer-events:none;transition:.3s ease-out;z-index:150;display:flex;align-items:center;justify-content:center;-webkit-tap-highlight-color:transparent}
 .bt:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(217,119,6,.4)}
 .bt:focus-visible{outline:2px solid var(--ac);outline-offset:2px}
-.bt.s{opacity:1}
+.bt.s{opacity:1;pointer-events:auto}
 .nr{text-align:center;padding:50px 20px;color:var(--tx2)}
 .ft{margin-left:var(--sw);padding:20px 32px;text-align:center;color:var(--tx2);font-size:11px;border-top:1px solid var(--bd)}
 .ft a{color:var(--ac2);text-decoration:none}
@@ -101,31 +101,177 @@ body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans TC","Ping
 .modal button{padding:8px 20px;border-radius:6px;cursor:pointer;font-size:13px;border:none}
 .modal .btn-p{background:var(--ac);color:#fff}
 .modal .btn-s{background:#eee;color:#333}
+/* Mode toggle */
+.mode-tog{display:flex;gap:2px;background:rgba(255,255,255,.06);border-radius:6px;padding:2px}
+.mode-tog button{background:none;border:none;color:rgba(255,255,255,.45);padding:4px 12px;border-radius:4px;cursor:pointer;font-size:12px;font-weight:600;transition:.2s}
+.mode-tog button.on{background:rgba(255,255,255,.15);color:#fff}
+.mode-tog button:hover:not(.on){color:rgba(255,255,255,.7)}
+/* Vocab grid */
+.vg{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:8px;margin-bottom:24px}
+.vi{background:var(--bg2);border:1px solid var(--bd);border-radius:8px;padding:10px 14px;display:flex;align-items:flex-start;gap:10px;transition:.2s;position:relative}
+.vi:hover{box-shadow:var(--sh2);border-color:var(--ac)}
+.vi .vl{flex:1;min-width:0}
+.vi .vw{font-family:"Noto Serif JP",serif;font-size:18px;font-weight:700;line-height:1.3}
+.vi .vr{font-size:11px;color:var(--ac2);margin-top:1px}
+.vi .vm{font-size:13px;color:var(--tx2);margin-top:3px}
+.vi .vp{font-size:9px;padding:2px 6px;border-radius:10px;background:var(--ac);color:#fff;white-space:nowrap;flex-shrink:0;margin-top:2px}
+.vi .star{width:18px;height:18px;cursor:pointer;fill:none;stroke:#ccc;stroke-width:2;transition:.2s;flex-shrink:0;margin-top:2px}
+.vi .star:hover{stroke:var(--ac)}
+.vi .star.on{fill:var(--ac);stroke:var(--ac)}
 @media(max-width:860px){
+  :root{--hh-m:96px}
+  .hd{padding:6px 10px;gap:6px;align-content:center}
+  .hd h1{font-size:14px}
+  .mode-tog button{padding:3px 8px;font-size:11px}
+  .tabs button{padding:3px 10px;font-size:12px}
+  .fav-btn{padding:3px 8px;font-size:11px}
+  .act-btn{padding:3px 8px;font-size:11px}
+  .auth-btn{padding:3px 8px;font-size:11px}
+  .sb{max-width:140px;order:10}
+  .sb input{padding:5px 10px 5px 28px;font-size:12px}
+  .sb svg{width:12px;height:12px;left:8px}
+  .stats{display:none}
   .sd{transform:translateX(-100%);transition:.3s;width:250px}
   .sd.open{transform:translateX(0)}
-  .mn{margin-left:0;padding:calc(var(--hh)+16px) 14px 50px}
-  .ft{margin-left:0;padding:20px 14px}
+  .mn{margin-left:0;padding:calc(var(--hh-m) + 8px) 12px 60px}
+  .ft{margin-left:0;padding:16px 12px;font-size:10px}
   .menu-btn{display:block}
   .overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:85}
   .overlay.show{display:block}
-  .sb{max-width:160px}
-  .stats{display:none}
+  .intro{padding:16px;margin-bottom:20px}
+  .intro h2{font-size:17px}
+  .intro p{font-size:12px}
+  .cs{margin-bottom:24px}
+  .cs>h2{font-size:15px;margin-bottom:10px}
+  .vg{grid-template-columns:1fr 1fr;gap:6px}
+  .vi{padding:8px 10px;gap:6px}
+  .vi .vw{font-size:15px}
+  .vi .vp{font-size:8px;padding:1px 5px}
+  .gc .gh{padding:10px 12px}
+  .gc .gx{padding:0 12px 12px}
+  .cf-hd{padding:10px 12px;font-size:13px}
+  .bt{bottom:16px;right:16px}
 }
+@media(max-width:480px){
+  .hd h1{font-size:13px}
+  .mode-tog button{padding:3px 6px;font-size:10px}
+  .tabs button{padding:3px 8px;font-size:11px}
+  .sb{max-width:100px}
+  .fav-btn,.act-btn,.auth-btn{font-size:10px;padding:2px 6px}
+  .mn{padding:calc(var(--hh-m) + 4px) 10px 60px}
+  .vg{grid-template-columns:1fr}
+  .vi .vw{font-size:16px}
+  .qmain{font-size:28px}
+  .qopt{padding:10px;font-size:14px}
+}
+/* Quiz/SRS overlay */
+.quiz-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:200;align-items:center;justify-content:center}
+.quiz-bg.show{display:flex}
+.quiz-box{background:#fff;border-radius:14px;padding:28px;max-width:520px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)}
+.qf{margin:14px 0}
+.qf label{display:block;font-size:12px;color:var(--tx2);margin-bottom:5px;font-weight:600}
+.qo{display:flex;gap:6px;flex-wrap:wrap}
+.qo button{padding:6px 14px;border:1px solid var(--bd);border-radius:6px;background:#fff;cursor:pointer;font-size:13px;transition:.2s}
+.qo button.on{background:var(--ac2);color:#fff;border-color:var(--ac2)}
+.qstart{width:100%;padding:12px;background:var(--ac2);color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;margin-top:14px}
+.qclose{width:100%;padding:10px;background:none;border:1px solid var(--bd);border-radius:8px;font-size:13px;cursor:pointer;margin-top:8px;color:var(--tx2)}
+.qhd{display:flex;justify-content:space-between;font-size:13px;color:var(--tx2);margin-bottom:16px}
+.qprompt{text-align:center;padding:20px 0}
+.qmain{font-family:"Noto Serif JP",serif;font-size:36px;font-weight:700}
+.qsub{font-size:14px;color:var(--ac2);margin-top:4px}
+.qopts{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.qopt{padding:14px;border:2px solid var(--bd);border-radius:10px;background:#fff;cursor:pointer;font-size:15px;transition:.2s;text-align:center}
+.qopt:hover{border-color:var(--ac2);background:rgba(37,99,235,.04)}
+.qopt.qcorrect{border-color:#16a34a;background:#dcfce7;color:#166534}
+.qopt.qwrong{border-color:#dc2626;background:#fef2f2;color:#991b1b}
+.qscore{text-align:center;font-size:32px;font-weight:700;margin:16px 0;padding:16px;border-radius:10px}
+.qscore.good{background:#dcfce7;color:#166534}
+.qscore.ok{background:#fef9c3;color:#854d0e}
+.qscore.bad{background:#fef2f2;color:#991b1b}
+.qresults{max-height:280px;overflow-y:auto;margin:12px 0}
+.qr{padding:5px 0;border-bottom:1px solid var(--bd);font-size:13px;display:flex;align-items:center;gap:6px}
+.qrc{font-weight:700}.qr.ok .qrc{color:#16a34a}.qr.ng .qrc{color:#dc2626}
+.qactions{display:flex;gap:8px}.qactions .qstart,.qactions .qclose{flex:1}
+.srs-card{text-align:center;padding:28px 16px;cursor:pointer;border:2px solid var(--bd);border-radius:12px;margin:12px 0;min-height:160px;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:.2s}
+.srs-card:hover{border-color:var(--ac2)}
+.srs-hint{font-size:12px;color:var(--tx-s);margin-top:10px}
+.srs-meaning{font-size:22px;color:var(--ac);margin:12px 0;font-weight:600}
+.srs-btns{display:flex;gap:12px;justify-content:center;margin-top:14px}
+.srs-btn{padding:10px 28px;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.srs-hard{background:#fef2f2;color:#dc2626}.srs-ok{background:#dcfce7;color:#166534}
+.srs-stats{text-align:center;font-size:12px;color:var(--tx2)}
+.srs-done-stats{text-align:center;padding:16px;font-size:15px;line-height:2.2}
+/* Confusables */
+.cf-card{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:10px;overflow:hidden;transition:.2s}
+.cf-card:hover{box-shadow:var(--sh2)}
+.cf-hd{padding:12px 16px;cursor:pointer;display:flex;align-items:center;gap:8px;font-weight:600;font-size:14px}
+.cf-hd:hover{background:var(--bg)}
+.cf-lv{font-size:10px;padding:2px 6px;border-radius:10px;background:var(--ac);color:#fff}
+.cf-bd{display:none;padding:0 16px 16px;border-top:1px solid var(--bd)}
+.cf-card.o .cf-bd{display:block}
+.cf-card .arr{width:16px;height:16px;transition:.2s;stroke:#aaa;margin-left:auto;flex-shrink:0}
+.cf-card.o .arr{transform:rotate(180deg)}
+.cf-words{display:grid;gap:6px;margin:10px 0}
+.cf-w{display:flex;gap:8px;align-items:baseline;padding:8px 12px;background:var(--bg);border-radius:6px}
+.cf-w .cfw{font-family:"Noto Serif JP",serif;font-size:16px;font-weight:700;min-width:70px}
+.cf-w .cfm{font-size:12px;color:var(--ac);min-width:45px}
+.cf-w .cfn{font-size:12px;color:var(--tx2);flex:1}
+.cf-tip{background:#FEF3C7;border-radius:6px;padding:8px 12px;font-size:12px;color:#92400E;border-left:3px solid var(--ac);margin:8px 0}
+.cf-eg{margin-top:8px}.cf-eg .ex{padding:3px 0;font-size:13px}
+.cf-eg .j{color:var(--ac2)}.cf-eg .j em{color:#B45309;font-style:normal;font-weight:700}
+.cf-eg .z{font-size:11px;color:var(--tx2)}
+/* Action buttons */
+.act-btn{background:none;border:1px solid rgba(255,255,255,.2);color:rgba(255,255,255,.6);padding:4px 10px;border-radius:6px;cursor:pointer;font-size:12px;transition:.2s;white-space:nowrap}
+.act-btn:hover{border-color:var(--ac);color:var(--ac)}
+/* Stats */
+.st-section{margin-bottom:20px}
+.st-title{font-size:14px;font-weight:700;margin-bottom:10px;padding-bottom:6px;border-bottom:2px solid var(--ac);color:var(--tx)}
+.st-empty{font-size:13px;color:var(--tx2);padding:12px 0}
+.st-bars{display:flex;align-items:flex-end;gap:3px;height:100px;padding:8px 0;border-bottom:1px solid var(--bd)}
+.st-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;min-width:0}
+.st-bar{width:100%;min-height:4px;border-radius:3px 3px 0 0;transition:.3s}
+.st-bar-lbl{font-size:9px;color:var(--tx2);margin-top:2px}
+.st-row{display:flex;justify-content:space-between;font-size:12px;color:var(--tx2);margin-top:6px;flex-wrap:wrap;gap:4px}
+.st-prog{margin-bottom:14px}
+.st-prog-hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.st-prog-lv{font-weight:700;font-size:14px;color:var(--ac2)}
+.st-prog-num{font-size:12px;color:var(--tx2)}
+.st-prog-bar{height:10px;background:#e5e7eb;border-radius:5px;overflow:hidden;display:flex}
+.st-prog-fill{height:100%;transition:.4s}
+.st-prog-mastered{background:#16a34a}
+.st-prog-learning{background:#f59e0b}
+.st-prog-legend{display:flex;gap:10px;font-size:11px;color:var(--tx2);margin-top:4px;flex-wrap:wrap}
+.st-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:2px;vertical-align:middle}
+.st-dot-mastered{background:#16a34a}.st-dot-learning{background:#f59e0b}.st-dot-new{background:#e5e7eb}
+.st-weak-list{max-height:260px;overflow-y:auto}
+.st-weak-item{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--bd);font-size:13px}
+.st-weak-word{font-family:"Noto Serif JP",serif;font-weight:700;min-width:60px}
+.st-weak-reading{font-size:11px;color:var(--ac2);min-width:55px}
+.st-weak-meaning{flex:1;color:var(--tx2);font-size:12px}
+.st-weak-rate{font-weight:700;font-size:12px;min-width:35px;text-align:right}
+.st-weak-lv{font-size:10px;color:#fff;background:var(--ac2);padding:1px 5px;border-radius:8px}
 </style>
 </head>
 <body>
 
 <header class="hd">
   <button class="menu-btn" onclick="toggleSd()" aria-label="選單"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg></button>
-  <h1>出口<span>文法</span></h1>
+  <h1>出口<span id="modeTitle">文法</span></h1>
+  <div class="mode-tog" id="modeTog">
+    <button class="on" onclick="switchMode('grammar')">文法</button>
+    <button onclick="switchMode('vocab')">單字</button>
+    <button onclick="switchMode('confuse')">比較</button>
+  </div>
   <div class="tabs" id="tabs">
     <button class="on" onclick="switchLevel('n5')">N5</button>
     <button onclick="switchLevel('n4')">N4</button>
   </div>
   <button class="fav-btn" id="favBtn" onclick="toggleFavFilter()">★ 收藏</button>
-  <div class="sb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="search" placeholder="搜尋文法..." oninput="onSearch(this.value)"></div>
+  <div class="sb"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input id="search" placeholder="搜尋..." oninput="onSearch(this.value)"></div>
   <span class="stats" id="stats"></span>
+  <button class="act-btn" onclick="Quiz.start()">測驗</button>
+  <button class="act-btn" id="reviewBtn" onclick="SRS.start()">複習</button>
+  <button class="act-btn" onclick="Stats.open()">統計</button>
   <button class="auth-btn" id="authBtn" onclick="handleAuth()">登入</button>
 </header>
 
@@ -135,9 +281,14 @@ body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans TC","Ping
 <footer class="ft">
   <a href="https://www.youtube.com/@deguchi" target="_blank">出口日語 YouTube</a> ｜
   <a href="https://jozu.tw/docs/deguchi-N5" target="_blank">jozu.tw</a> ｜
-  N5 119 項 ＋ N4 120 項 完整收錄
+  <span id="ftInfo">N5 119 項 ＋ N4 120 項 完整收錄</span>
 </footer>
-<button class="bt" id="bt" onclick="scrollTo({top:0,behavior:'smooth'})">↑</button>
+<button class="bt" id="bt" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<!-- Quiz / SRS overlay -->
+<div class="quiz-bg" id="quizBg">
+  <div class="quiz-box" id="quizBox"></div>
+</div>
 
 <!-- Firebase Setup Modal -->
 <div class="modal-bg" id="setupModal">
@@ -160,6 +311,17 @@ body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans TC","Ping
   </div>
 </div>
 
+<!-- Vocab Data -->
+<script src="vocab-n5.js"></script>
+<script src="vocab-n4.js"></script>
+<script src="vocab-n3.js"></script>
+<script src="vocab-n2.js"></script>
+<!-- Grammar N3/N2 -->
+<script src="grammar-n3.js"></script>
+<script src="grammar-n2.js"></script>
+<!-- Confusables -->
+<script src="confusables.js"></script>
+
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
@@ -175,7 +337,7 @@ if (fbConfig) {
   firebase.initializeApp(fbConfig);
   auth = firebase.auth();
   db = firebase.firestore();
-  auth.onAuthStateChanged(u => { currentUser = u; updateAuthUI(); loadFavorites(); });
+  auth.onAuthStateChanged(u => { currentUser = u; updateAuthUI(); loadFavorites(); loadCloudData(); });
 }
 
 // ========== AUTH ==========
@@ -203,23 +365,23 @@ function saveConfig() {
 function closeModal() { document.getElementById('setupModal').classList.remove('show'); }
 
 // ========== FAVORITES ==========
-let favorites = { n5: [], n4: [] };
+const FAV_INIT = {n5:[],n4:[],n3:[],n2:[],vn5:[],vn4:[],vn3:[],vn2:[]};
+let favorites = {...FAV_INIT};
 
 function loadFavorites() {
-  // Load from localStorage first
-  try { favorites = JSON.parse(localStorage.getItem('deguchi_fav')) || { n5:[], n4:[] }; } catch(e){ favorites={n5:[],n4:[]}; }
-  // If logged in, merge from Firestore
+  try { const s=JSON.parse(localStorage.getItem('deguchi_fav')); favorites={...FAV_INIT,...s}; } catch(e){ favorites={...FAV_INIT}; }
   if (currentUser && db) {
     db.collection('users').doc(currentUser.uid).get().then(doc => {
       if (doc.exists) {
-        const cloud = doc.data().favorites || {n5:[],n4:[]};
-        favorites.n5 = [...new Set([...favorites.n5, ...(cloud.n5||[])])];
-        favorites.n4 = [...new Set([...favorites.n4, ...(cloud.n4||[])])];
+        const cloud = doc.data().favorites || {};
+        Object.keys(FAV_INIT).forEach(k => {
+          favorites[k] = [...new Set([...(favorites[k]||[]), ...(cloud[k]||[])])];
+        });
         saveFavLocal();
       }
-      render();
-    }).catch(() => render());
-  } else { render(); }
+      doRender();
+    }).catch(() => doRender());
+  } else { doRender(); }
 }
 function saveFavLocal() { localStorage.setItem('deguchi_fav', JSON.stringify(favorites)); }
 function saveFavCloud() {
@@ -227,42 +389,121 @@ function saveFavCloud() {
     db.collection('users').doc(currentUser.uid).set({ favorites }, { merge: true });
   }
 }
+
+// ========== CLOUD SYNC: Quiz History & SRS ==========
+function loadCloudData() {
+  if (!currentUser || !db) return;
+  db.collection('users').doc(currentUser.uid).get().then(doc => {
+    if (!doc.exists) return;
+    const d = doc.data();
+    // Merge quiz history
+    if (d.quiz_history) {
+      const local = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+      const cloud = d.quiz_history || [];
+      const merged = mergeHistory(local, cloud);
+      localStorage.setItem('quiz_history', JSON.stringify(merged));
+    }
+    // Merge SRS data
+    if (d.srs_data) {
+      const local = JSON.parse(localStorage.getItem('srs_data') || '{}');
+      const cloud = d.srs_data || {};
+      const merged = mergeSRS(local, cloud);
+      localStorage.setItem('srs_data', JSON.stringify(merged));
+    }
+    if (typeof SRS !== 'undefined') SRS.updateReviewCount();
+  }).catch(() => {});
+}
+function mergeHistory(local, cloud) {
+  const all = [...local, ...cloud];
+  const seen = new Set();
+  return all.filter(h => { const k = h.date + h.level + h.score; if (seen.has(k)) return false; seen.add(k); return true; }).slice(-200);
+}
+function mergeSRS(local, cloud) {
+  const merged = { ...cloud };
+  Object.entries(local).forEach(([k, v]) => {
+    if (!merged[k] || (v.lastReview && (!merged[k].lastReview || v.lastReview > merged[k].lastReview))) {
+      merged[k] = v;
+    }
+  });
+  return merged;
+}
+function saveQuizCloud() {
+  if (!currentUser || !db) return;
+  const h = JSON.parse(localStorage.getItem('quiz_history') || '[]');
+  db.collection('users').doc(currentUser.uid).set({ quiz_history: h }, { merge: true });
+}
+function saveSRSCloud() {
+  if (!currentUser || !db) return;
+  const d = JSON.parse(localStorage.getItem('srs_data') || '{}');
+  db.collection('users').doc(currentUser.uid).set({ srs_data: d }, { merge: true });
+}
+function favKey() { return currentMode==='vocab' ? 'v'+currentLevel : currentLevel; }
 function toggleFav(id) {
-  const lv = currentLevel;
-  const idx = favorites[lv].indexOf(id);
-  if (idx > -1) favorites[lv].splice(idx, 1); else favorites[lv].push(id);
+  const k = favKey();
+  const idx = favorites[k].indexOf(id);
+  if (idx > -1) favorites[k].splice(idx, 1); else favorites[k].push(id);
   saveFavLocal(); saveFavCloud();
-  // Update star UI
-  const star = document.querySelector(`#${CSS.escape(id)} .star`);
-  if (star) star.classList.toggle('on', favorites[lv].includes(id));
+  const star = document.querySelector(`[data-fid="${id}"] .star, #${CSS.escape(id)} .star`);
+  if (star) star.classList.toggle('on', favorites[k].includes(id));
   updateFavCount();
 }
 function updateFavCount() {
   const btn = document.getElementById('favBtn');
-  const c = favorites[currentLevel].length;
+  const c = (favorites[favKey()]||[]).length;
   btn.textContent = c ? `★ 收藏 (${c})` : '★ 收藏';
 }
 
 // ========== STATE ==========
+let currentMode = 'grammar'; // 'grammar' | 'vocab'
 let currentLevel = 'n5';
 let showFavOnly = false;
 let searchTerm = '';
 
+function switchMode(mode) {
+  currentMode = mode;
+  showFavOnly = false;
+  document.getElementById('favBtn').classList.remove('on');
+  document.getElementById('search').value = '';
+  searchTerm = '';
+  document.querySelectorAll('#modeTog button').forEach((b,i) => b.classList.toggle('on', (i===0&&mode==='grammar')||(i===1&&mode==='vocab')||(i===2&&mode==='confuse')));
+  document.getElementById('modeTitle').textContent = mode==='grammar'?'文法':mode==='vocab'?'單字':'比較';
+  updateTabs();
+  currentLevel = mode==='confuse'?'all':'n5';
+  doRender();
+}
+function updateTabs() {
+  const tabs = document.getElementById('tabs');
+  if (currentMode === 'grammar') {
+    tabs.innerHTML = '<button class="on" onclick="switchLevel(\'n5\')">N5</button><button onclick="switchLevel(\'n4\')">N4</button><button onclick="switchLevel(\'n3\')">N3</button><button onclick="switchLevel(\'n2\')">N2</button>';
+  } else if (currentMode === 'vocab') {
+    tabs.innerHTML = '<button class="on" onclick="switchLevel(\'n5\')">N5</button><button onclick="switchLevel(\'n4\')">N4</button><button onclick="switchLevel(\'n3\')">N3</button><button onclick="switchLevel(\'n2\')">N2</button>';
+  } else {
+    tabs.innerHTML = '<button class="on" onclick="switchLevel(\'all\')">全部</button><button onclick="switchLevel(\'n3\')">N3</button><button onclick="switchLevel(\'n2\')">N2</button>';
+  }
+}
 function switchLevel(lv) {
   currentLevel = lv;
   showFavOnly = false;
   document.getElementById('favBtn').classList.remove('on');
   document.getElementById('search').value = '';
   searchTerm = '';
-  document.querySelectorAll('.tabs button').forEach((b,i) => b.classList.toggle('on', (i===0&&lv==='n5')||(i===1&&lv==='n4')));
-  render();
+  let levels;
+  if (currentMode === 'confuse') levels = ['all','n3','n2'];
+  else levels = ['n5','n4','n3','n2'];
+  document.querySelectorAll('#tabs button').forEach((b,i) => b.classList.toggle('on', levels[i]===lv));
+  doRender();
 }
 function toggleFavFilter() {
   showFavOnly = !showFavOnly;
   document.getElementById('favBtn').classList.toggle('on', showFavOnly);
-  render();
+  doRender();
 }
-let st; function onSearch(v) { clearTimeout(st); st = setTimeout(() => { searchTerm = v.trim().toLowerCase(); render(); }, 200); }
+let st; function onSearch(v) { clearTimeout(st); st = setTimeout(() => { searchTerm = v.trim().toLowerCase(); doRender(); }, 200); }
+function doRender() {
+  if (currentMode==='vocab') renderVocab();
+  else if (currentMode==='confuse') renderConfuse();
+  else render();
+}
 
 // ========== N5 DATA ==========
 const N5 = [
@@ -428,10 +669,133 @@ const CATS_N4 = [
   {name:"引用・思考",icon:"引"},{name:"敬語",icon:"敬"},{name:"口語・助詞",icon:"口"}
 ];
 
-// ========== RENDER ==========
+// ========== VOCAB CATEGORIES ==========
+const VOCAB_CATS = [
+  {name:"名詞",icon:"名",key:"名"},{name:"動詞",icon:"動",key:"動"},
+  {name:"い形容詞",icon:"い",key:"い形"},{name:"な形容詞",icon:"な",key:"な形"},
+  {name:"副詞",icon:"副",key:"副"},{name:"その他",icon:"他",key:"他"}
+];
+function getVocabData(lv) {
+  if(lv==='n5') return typeof VOCAB_N5!=='undefined'?VOCAB_N5:[];
+  if(lv==='n4') return typeof VOCAB_N4!=='undefined'?VOCAB_N4:[];
+  if(lv==='n3') return typeof VOCAB_N3!=='undefined'?VOCAB_N3:[];
+  if(lv==='n2') return typeof VOCAB_N2!=='undefined'?VOCAB_N2:[];
+  return [];
+}
+
+// ========== RENDER VOCAB ==========
+function renderVocab() {
+  const data = getVocabData(currentLevel);
+  const fk = favKey();
+  const favList = favorites[fk] || [];
+  const mn = document.getElementById('mn');
+  const sd = document.getElementById('sd');
+  const lf = searchTerm;
+
+  let filtered = data;
+  if (lf) filtered = filtered.filter(d => d.w.includes(lf)||d.r.includes(lf)||d.m.includes(lf));
+  if (showFavOnly) filtered = filtered.filter(d => favList.includes(d.w));
+
+  const groups = {};
+  VOCAB_CATS.forEach(c => groups[c.key] = []);
+  filtered.forEach(d => { if(groups[d.c]) groups[d.c].push(d); else if(!groups['他']) groups['他']=[d]; else groups['他'].push(d); });
+
+  let h = '';
+  if (!lf && !showFavOnly) {
+    const lv = currentLevel.toUpperCase();
+    const cnt = data.length;
+    h += `<div class="intro"><h2>JLPT ${lv} 單字表</h2><p>收錄 ${lv} 級別常考單字共 ${cnt} 個，涵蓋名詞、動詞、形容詞、副詞等詞性。</p><div class="tg"><span>JLPT ${lv}</span><span>${cnt} 單字</span><span>點擊 ★ 收藏</span></div></div>`;
+  }
+
+  let vc = 0;
+  VOCAB_CATS.forEach(cat => {
+    const items = groups[cat.key];
+    if (!items||!items.length) return;
+    vc += items.length;
+    h += `<section class="cs" id="vcat-${cat.key}"><h2><span class="ci2">${cat.icon}</span>${cat.name}<span style="font-size:12px;color:#999;font-weight:400;margin-left:auto">${items.length} 個</span></h2>`;
+    h += '<div class="vg">';
+    items.forEach(d => {
+      const isFav = favList.includes(d.w);
+      const eid = 'v-'+currentLevel+'-'+(d.w+d.r).replace(/[^a-zA-Z0-9\u3000-\u9fff\u3040-\u309f\u30a0-\u30ff]/g,'');
+      h += `<div class="vi" data-fid="${d.w}"><div class="vl"><div class="vw">${d.w}</div>${d.w!==d.r?`<div class="vr">${d.r}</div>`:''}<div class="vm">${d.m}</div></div><span class="vp">${cat.name}</span><svg class="star ${isFav?'on':''}" onclick="toggleFav('${d.w.replace(/'/g,"\\'")}')" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg></div>`;
+    });
+    h += '</div></section>';
+  });
+
+  if (!vc) h += `<div class="nr"><p>${showFavOnly?'還沒有收藏任何單字':'找不到符合的單字'}</p></div>`;
+  mn.innerHTML = h;
+  document.getElementById('stats').textContent = `${vc} / ${data.length}`;
+  updateFavCount();
+
+  // Sidebar
+  let sh = '';
+  VOCAB_CATS.forEach(cat => {
+    const items = groups[cat.key];
+    if (!items||!items.length) return;
+    sh += `<div class="ct" onclick="toggleCat(this)">${cat.name} (${items.length})</div><div class="ci" style="max-height:${Math.min(items.length*28,400)}px">`;
+    items.slice(0,50).forEach(d => { sh += `<a href="#vcat-${cat.key}" onclick="closeSdMobile()">${d.w} ${d.m}</a>`; });
+    if(items.length>50) sh+=`<a href="#vcat-${cat.key}" style="color:var(--ac)" onclick="closeSdMobile()">…還有 ${items.length-50} 個</a>`;
+    sh += '</div>';
+  });
+  sd.innerHTML = sh;
+
+  // Update footer
+  document.getElementById('ftInfo').textContent = `${currentLevel.toUpperCase()} 單字 ${data.length} 個收錄`;
+}
+
+// ========== RENDER CONFUSABLES ==========
+function renderConfuse() {
+  const data = typeof CONFUSABLES !== 'undefined' ? CONFUSABLES : [];
+  const mn = document.getElementById('mn');
+  const sd = document.getElementById('sd');
+  const lf = searchTerm;
+  const lvFilter = currentLevel; // 'all','n3','n2'
+
+  let filtered = data;
+  if (lvFilter !== 'all') filtered = filtered.filter(d => d.level && d.level.toLowerCase().includes(lvFilter));
+  if (lf) filtered = filtered.filter(d => d.title.includes(lf) || d.words.some(w => w.w.includes(lf)||w.m.includes(lf)) || (d.tip&&d.tip.includes(lf)));
+
+  let h = '';
+  if (!lf) {
+    h += '<div class="intro"><h2>易混淆詞比較</h2><p>N2 考試最愛考近義詞辨析。每組收錄差異說明 + 對比例句，掌握細微語感。</p><div class="tg"><span>'+filtered.length+' 組</span><span>點擊展開詳細</span></div></div>';
+  }
+
+  filtered.forEach(cf => {
+    h += '<div class="cf-card" onclick="this.classList.toggle(\'o\')"><div class="cf-hd"><span class="cf-lv">'+cf.level+'</span>'+cf.title+'<svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div><div class="cf-bd"><div class="cf-words">';
+    cf.words.forEach(w => {
+      h += '<div class="cf-w"><span class="cfw">'+w.w+'</span><span class="cfm">'+w.m+'</span><span class="cfn">'+w.note+'</span></div>';
+    });
+    h += '</div>';
+    if (cf.tip) h += '<div class="cf-tip">'+cf.tip+'</div>';
+    if (cf.eg && cf.eg.length) {
+      h += '<div class="cf-eg">';
+      cf.eg.forEach(e => { h += '<div class="ex"><div class="j">'+e.j+'</div><div class="z">'+e.z+'</div></div>'; });
+      h += '</div>';
+    }
+    h += '</div></div>';
+  });
+  if (!filtered.length) h += '<div class="nr"><p>找不到符合的比較項目</p></div>';
+  mn.innerHTML = h;
+  document.getElementById('stats').textContent = filtered.length + ' 組';
+
+  let sh = '';
+  filtered.slice(0, 60).forEach(cf => { sh += '<a href="#" onclick="event.preventDefault();closeSdMobile()">'+cf.title+'</a>'; });
+  sd.innerHTML = sh;
+  document.getElementById('ftInfo').textContent = '易混淆詞比較 ' + data.length + ' 組收錄';
+}
+
+// ========== RENDER GRAMMAR ==========
+function getGrammarData(lv) {
+  if (lv === 'n5') return { data: N5, cats: CATS_N5 };
+  if (lv === 'n4') return { data: N4, cats: CATS_N4 };
+  if (lv === 'n3' && typeof N3 !== 'undefined') return { data: N3, cats: CATS_N3 };
+  if (lv === 'n2' && typeof N2 !== 'undefined') return { data: N2, cats: CATS_N2 };
+  return { data: [], cats: [] };
+}
 function render() {
-  const data = currentLevel === 'n5' ? N5 : N4;
-  const cats = currentLevel === 'n5' ? CATS_N5 : CATS_N4;
+  const gd = getGrammarData(currentLevel);
+  const data = gd.data;
+  const cats = gd.cats;
   const favList = favorites[currentLevel] || [];
   const mn = document.getElementById('mn');
   const sd = document.getElementById('sd');
@@ -470,6 +834,7 @@ function render() {
   mn.innerHTML = h;
   document.getElementById('stats').textContent = `${vc} / ${data.length}`;
   updateFavCount();
+  document.getElementById('ftInfo').textContent = `N5 ${N5.length} 項 ＋ N4 ${N4.length} 項 完整收錄`;
 
   // Sidebar
   let sh = '';
@@ -495,10 +860,28 @@ window.addEventListener('scroll',()=>{
   document.querySelectorAll('.sd a').forEach(a=>a.classList.toggle('on',a.getAttribute('href')==='#'+cur));
 });
 
+// Fix header height on mobile (header wraps to 2 rows)
+function fixHeaderHeight() {
+  const hd = document.querySelector('.hd');
+  const h = hd.offsetHeight;
+  document.documentElement.style.setProperty('--hh-real', h + 'px');
+  document.querySelector('.mn').style.paddingTop = (h + 16) + 'px';
+  document.querySelector('.sd').style.top = h + 'px';
+  document.querySelector('.sd').style.height = 'calc(100vh - ' + h + 'px)';
+  document.documentElement.style.scrollPaddingTop = (h + 16) + 'px';
+}
+window.addEventListener('resize', fixHeaderHeight);
+
 // Init
 loadFavorites();
 updateAuthUI();
+updateTabs();
+setTimeout(fixHeaderHeight, 50);
 if(location.hash){const el=document.querySelector(location.hash);if(el&&el.classList.contains('gc')){el.classList.add('o');setTimeout(()=>el.scrollIntoView({behavior:'smooth'}),100)}}
+setTimeout(()=>{ if(typeof SRS!=='undefined') SRS.updateReviewCount(); }, 100);
 </script>
+<script src="quiz.js"></script>
+<script src="srs.js"></script>
+<script src="stats.js"></script>
 </body>
 </html>
