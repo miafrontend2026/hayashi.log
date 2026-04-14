@@ -39,9 +39,10 @@ body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans TC","Ping
 .menu-btn{display:none;background:none;border:none;color:#fff;cursor:pointer;padding:2px}
 .menu-btn svg{width:22px;height:22px}
 /* ── Toolbar row ── */
-.hd-bar{display:flex;align-items:center;padding:0 16px;height:36px;gap:6px;background:rgba(0,0,0,.15);overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+.hd-bar{display:flex;align-items:center;padding:0 12px;height:34px;gap:5px;background:rgba(0,0,0,.15);overflow-x:auto;overflow-y:hidden;flex-wrap:nowrap;scrollbar-width:none;-webkit-overflow-scrolling:touch;-ms-overflow-style:none}
 .hd-bar::-webkit-scrollbar{display:none}
-.mode-pill,.tab-pill,.tool-pill{border:none;border-radius:14px;cursor:pointer;font-size:11px;font-weight:600;padding:4px 12px;transition:.2s;white-space:nowrap;flex-shrink:0}
+#tabsBar{display:contents}
+.mode-pill,.tab-pill,.tool-pill{border:none;border-radius:14px;cursor:pointer;font-size:11px;font-weight:600;padding:4px 11px;transition:.2s;white-space:nowrap;flex-shrink:0}
 .mode-pill{background:rgba(255,255,255,.08);color:rgba(255,255,255,.5)}
 .mode-pill.on{background:var(--ac);color:#fff}
 .mode-pill:hover:not(.on){color:#fff}
@@ -305,7 +306,7 @@ body{font-family:"Noto Sans JP","Hiragino Kaku Gothic ProN","Noto Sans TC","Ping
     <button class="mode-pill" onclick="switchMode('vocab')">單字</button>
     <button class="mode-pill" onclick="switchMode('confuse')">比較</button>
     <div class="hd-sep"></div>
-    <span id="tabsBar"></span>
+    <div id="tabsBar" style="display:contents"></div>
     <div class="hd-sep"></div>
     <button class="tool-pill" id="favBtn" onclick="toggleFavFilter()">★</button>
     <button class="tool-pill" onclick="Quiz.start()">測驗</button>
