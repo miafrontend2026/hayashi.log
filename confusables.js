@@ -1,5 +1,5 @@
 // JLPT 易混淆詞彙比較 — 主要針對 N2 考試
-// Generated for deguchi-n5-notes
+// Generated for hayashi.log
 
 const CONFUSABLES = [
 
