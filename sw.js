@@ -1,4 +1,4 @@
-const CACHE_NAME = 'hayashi-v1';
+const CACHE_NAME = 'hayashi-v2';
 const ASSETS = [
   './',
   './index.html',
@@ -7,8 +7,10 @@ const ASSETS = [
   './vocab-n4.js',
   './vocab-n3.js',
   './vocab-n2.js',
+  './vocab-n1.js',
   './grammar-n3.js',
   './grammar-n2.js',
+  './grammar-n1.js',
   './confusables.js',
   './quiz.js',
   './srs.js',

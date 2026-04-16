@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>hayashi.log — JLPT N5～N2</title>
+<title>hayashi.log — JLPT N5～N1</title>
 <!-- GA4: replace G-XXXXXXXXXX with your Measurement ID -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-XXXXXXXXXX"></script>
 <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-XXXXXXXXXX');</script>
@@ -769,9 +769,11 @@ body {
 <script src="vocab-n4.js"></script>
 <script src="vocab-n3.js"></script>
 <script src="vocab-n2.js"></script>
-<!-- Grammar N3/N2 -->
+<script src="vocab-n1.js"></script>
+<!-- Grammar N3/N2/N1 -->
 <script src="grammar-n3.js"></script>
 <script src="grammar-n2.js"></script>
+<script src="grammar-n1.js"></script>
 <!-- Confusables -->
 <script src="confusables.js"></script>
 
@@ -814,7 +816,7 @@ function updateAuthUI() {
 }
 
 // ========== FAVORITES ==========
-const FAV_INIT = {n5:[],n4:[],n3:[],n2:[],vn5:[],vn4:[],vn3:[],vn2:[]};
+const FAV_INIT = {n5:[],n4:[],n3:[],n2:[],n1:[],vn5:[],vn4:[],vn3:[],vn2:[],vn1:[]};
 let favorites = {...FAV_INIT};
 
 function loadFavorites() {
@@ -923,12 +925,11 @@ function switchMode(mode) {
 }
 function updateTabs() {
   const bar = document.getElementById('tabsBar');
-  if (currentMode === 'grammar') {
-    bar.innerHTML = '<button class="tab-pill on" onclick="switchLevel(\'n5\')">N5</button><button class="tab-pill" onclick="switchLevel(\'n4\')">N4</button><button class="tab-pill" onclick="switchLevel(\'n3\')">N3</button><button class="tab-pill" onclick="switchLevel(\'n2\')">N2</button>';
-  } else if (currentMode === 'vocab') {
-    bar.innerHTML = '<button class="tab-pill on" onclick="switchLevel(\'n5\')">N5</button><button class="tab-pill" onclick="switchLevel(\'n4\')">N4</button><button class="tab-pill" onclick="switchLevel(\'n3\')">N3</button><button class="tab-pill" onclick="switchLevel(\'n2\')">N2</button>';
-  } else {
+  const allLevels = '<button class="tab-pill on" onclick="switchLevel(\'n5\')">N5</button><button class="tab-pill" onclick="switchLevel(\'n4\')">N4</button><button class="tab-pill" onclick="switchLevel(\'n3\')">N3</button><button class="tab-pill" onclick="switchLevel(\'n2\')">N2</button><button class="tab-pill" onclick="switchLevel(\'n1\')">N1</button>';
+  if (currentMode === 'confuse') {
     bar.innerHTML = '<button class="tab-pill on" onclick="switchLevel(\'all\')">全部</button><button class="tab-pill" onclick="switchLevel(\'n3\')">N3</button><button class="tab-pill" onclick="switchLevel(\'n2\')">N2</button>';
+  } else {
+    bar.innerHTML = allLevels;
   }
 }
 function switchLevel(lv) {
@@ -939,7 +940,7 @@ function switchLevel(lv) {
   searchTerm = '';
   let levels;
   if (currentMode === 'confuse') levels = ['all','n3','n2'];
-  else levels = ['n5','n4','n3','n2'];
+  else levels = ['n5','n4','n3','n2','n1'];
   document.querySelectorAll('.tab-pill').forEach((b,i) => b.classList.toggle('on', levels[i]===lv));
   doRender();
 }
@@ -1181,6 +1182,7 @@ function getVocabData(lv) {
   if(lv==='n4') return typeof VOCAB_N4!=='undefined'?VOCAB_N4:[];
   if(lv==='n3') return typeof VOCAB_N3!=='undefined'?VOCAB_N3:[];
   if(lv==='n2') return typeof VOCAB_N2!=='undefined'?VOCAB_N2:[];
+  if(lv==='n1') return typeof VOCAB_N1!=='undefined'?VOCAB_N1:[];
   return [];
 }
 
@@ -1356,6 +1358,7 @@ function getGrammarData(lv) {
   if (lv === 'n4') return { data: N4, cats: CATS_N4 };
   if (lv === 'n3' && typeof N3 !== 'undefined') return { data: N3, cats: CATS_N3 };
   if (lv === 'n2' && typeof N2 !== 'undefined') return { data: N2, cats: CATS_N2 };
+  if (lv === 'n1' && typeof N1 !== 'undefined') return { data: N1, cats: CATS_N1 };
   return { data: [], cats: [] };
 }
 function render() {
