@@ -94,6 +94,7 @@ const Quiz = (() => {
     h.push({ date: new Date().toISOString(), level: quizLevel, type: quizType, score, total: questions.length });
     if (h.length > 200) h.splice(0, h.length - 200);
     localStorage.setItem('quiz_history', JSON.stringify(h));
+    if (typeof Calendar !== 'undefined') Calendar.logActivity('quiz');
     if (typeof saveQuizCloud === 'function') saveQuizCloud();
     const box = document.getElementById('quizBox');
     box.innerHTML = `

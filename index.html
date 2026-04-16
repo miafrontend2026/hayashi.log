@@ -46,6 +46,8 @@
   --ok-bg: #fef9c3;
   --ok-tx: #854d0e;
   --prog-empty: #e5e7eb;
+  --cal-l1: rgba(232, 115, 74, 0.3);
+  --cal-l2: rgba(232, 115, 74, 0.6);
 }
 [data-theme="dark"] {
   --bg: #1A1A1A;
@@ -73,6 +75,8 @@
   --ok-bg: #2E2A1A;
   --ok-tx: #D4A84A;
   --prog-empty: #333333;
+  --cal-l1: rgba(232, 115, 74, 0.25);
+  --cal-l2: rgba(232, 115, 74, 0.55);
 }
 
 /* == Reset == */
@@ -712,6 +716,52 @@ body {
 .st-weak-meaning { flex: 1; color: var(--tx2); font-size: 12px; }
 .st-weak-rate { font-weight: 700; font-size: 12px; min-width: 35px; text-align: right; }
 .st-weak-lv { font-size: 10px; color: #fff; background: var(--ac2); padding: 1px 5px; border-radius: 8px; }
+
+/* == Study Calendar == */
+.cal-panel {
+  background: var(--bg2); border: 1px solid var(--bd); border-radius: var(--r);
+  padding: 16px; margin: 0 0 16px;
+  box-shadow: var(--sh);
+}
+.cal-streak {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 6px;
+  font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--tx);
+}
+.cal-streak-fire { color: var(--ac); }
+.cal-streak-sep { color: var(--tx2); font-weight: 400; }
+.cal-heatmap { overflow-x: auto; padding-bottom: 4px; }
+.cal-grid { display: inline-flex; flex-direction: column; gap: 2px; }
+.cal-row { display: flex; align-items: center; gap: 2px; }
+.cal-row.cal-months { margin-bottom: 2px; }
+.cal-day-lbl {
+  width: 20px; font-size: 10px; color: var(--tx2); text-align: right;
+  padding-right: 4px; flex-shrink: 0;
+}
+.cal-month-lbl { width: 12px; font-size: 10px; color: var(--tx2); text-align: center; }
+.cal-cell {
+  width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0;
+}
+.cal-cell[data-level="0"] { background: var(--bd); }
+.cal-cell[data-level="1"] { background: var(--cal-l1); }
+.cal-cell[data-level="2"] { background: var(--cal-l2); }
+.cal-cell[data-level="3"] { background: var(--ac); }
+.cal-cell[data-level="empty"] { background: transparent; }
+.cal-legend {
+  display: flex; align-items: center; gap: 3px; margin-top: 8px;
+  justify-content: flex-end; font-size: 11px; color: var(--tx2);
+}
+.cal-legend-tx { margin: 0 2px; }
+.cal-legend-cell { cursor: default; }
+.cal-progress {
+  display: flex; align-items: center; gap: 6px;
+  margin-top: 10px; font-size: 13px; color: var(--tx2);
+}
+.cal-prog-bar { font-family: monospace; letter-spacing: 1px; color: var(--ac); }
+.cal-prog-pct { font-weight: 700; color: var(--tx); }
+@media (max-width: 600px) {
+  .cal-panel { margin: 0 0 12px; padding: 12px; }
+  .cal-streak { font-size: 13px; }
+}
 </style>
 </head>
 <body>
@@ -740,6 +790,7 @@ body {
 <!-- Bottom nav: 5 items max (UX guideline) -->
 <nav class="ftb" id="ftb">
   <button class="ftb-btn" onclick="Quiz.start()"><svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>測驗</button>
+  <button class="ftb-btn" onclick="MockExam.start()"><svg viewBox="0 0 24 24"><path d="M12 14l9-5-9-5-9 5 9 5z"/><path d="M12 14l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14z"/><path d="M12 14l9-5-9-5-9 5 9 5zm0 0l6.16-3.422a12.083 12.083 0 01.665 6.479A11.952 11.952 0 0012 20.055a11.952 11.952 0 00-6.824-2.998 12.078 12.078 0 01.665-6.479L12 14zm-4 6v-7.5l4-2.222"/></svg>模考</button>
   <button class="ftb-btn" id="reviewBtn" onclick="SRS.start()"><svg viewBox="0 0 24 24"><path d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>複習</button>
   <button class="ftb-btn" onclick="GrammarDrill.start()"><svg viewBox="0 0 24 24"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>文法</button>
   <a class="ftb-btn" href="verbs.html"><svg viewBox="0 0 24 24"><path d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z"/></svg>動詞</a>
@@ -954,6 +1005,7 @@ function doRender() {
   if (currentMode==='vocab') renderVocab();
   else if (currentMode==='confuse') renderConfuse();
   else render();
+  if (typeof Calendar !== 'undefined') Calendar.renderPanel();
 }
 
 // ========== TTS ==========
@@ -1484,6 +1536,8 @@ setTimeout(()=>{ if(typeof SRS!=='undefined') SRS.updateReviewCount(); }, 100);
 <script src="srs.js"></script>
 <script src="stats.js"></script>
 <script src="grammar-drill.js"></script>
+<script src="mock-exam.js"></script>
 <script src="virtual-list.js"></script>
+<script src="calendar.js"></script>
 </body>
 </html>

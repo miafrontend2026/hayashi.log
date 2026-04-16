@@ -122,6 +122,7 @@ const GrammarDrill = (() => {
   function rate(correct) {
     const g = queue[cur];
     record(g.id, correct);
+    if (typeof Calendar !== 'undefined') Calendar.logActivity('grammar');
     cur++;
     if (cur >= queue.length) showDone(); else renderCard();
   }

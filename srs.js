@@ -108,6 +108,7 @@ const SRS = (() => {
   function rate(correct) {
     const item = queue[cur];
     record(lvl, item.w, correct);
+    if (typeof Calendar !== 'undefined') Calendar.logActivity('vocab');
     cur++;
     if (cur >= queue.length) showDone(); else renderCard();
   }
