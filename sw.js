@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sairyuu-v6';
+const CACHE_NAME = 'sairyuu-v7';
 const ASSETS = [
   './',
   './index.html',
