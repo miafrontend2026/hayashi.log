@@ -1,0 +1,25 @@
+rules_version = '2';
+
+// Firestore security rules for jpnote-1bdd6
+//
+// 部署方式（選一）：
+//   A. Firebase Console → Firestore Database → Rules → 貼上此檔內容 → 發布
+//   B. Firebase CLI: `firebase deploy --only firestore:rules`
+//      （需先 `firebase init firestore` 關聯 project jpnote-1bdd6）
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 每個使用者只能讀寫自己的 doc
+    // 結構：users/{uid} → { favorites, quiz_history, srs_data, ... }
+    match /users/{userId} {
+      allow read, write: if request.auth != null
+                        && request.auth.uid == userId;
+    }
+
+    // 預設拒絕：未明確允許的所有路徑皆擋
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
