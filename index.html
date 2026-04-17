@@ -904,18 +904,36 @@ function loadCloudData() {
     // Merge quiz history
     if (d.quiz_history) {
       const local = JSON.parse(localStorage.getItem('quiz_history') || '[]');
-      const cloud = d.quiz_history || [];
-      const merged = mergeHistory(local, cloud);
+      const merged = mergeHistory(local, d.quiz_history || []);
       localStorage.setItem('quiz_history', JSON.stringify(merged));
     }
     // Merge SRS data
     if (d.srs_data) {
       const local = JSON.parse(localStorage.getItem('srs_data') || '{}');
-      const cloud = d.srs_data || {};
-      const merged = mergeSRS(local, cloud);
+      const merged = mergeSRS(local, d.srs_data || {});
       localStorage.setItem('srs_data', JSON.stringify(merged));
     }
+    // Merge all other synced data (study_log, word_notebook, grammar_srs, daily_progress, mock_exam_history)
+    SYNC_KEYS.forEach(k => {
+      if (!d[k]) return;
+      const local = JSON.parse(localStorage.getItem(k) || (Array.isArray(d[k]) ? '[]' : '{}'));
+      if (Array.isArray(d[k])) {
+        // Array: merge + dedup by JSON string
+        const seen = new Set();
+        const merged = [...local, ...d[k]].filter(x => { const s = JSON.stringify(x); if (seen.has(s)) return false; seen.add(s); return true; });
+        localStorage.setItem(k, JSON.stringify(merged));
+      } else {
+        // Object: cloud values win if newer, local wins otherwise
+        const merged = { ...d[k] };
+        Object.entries(local).forEach(([key, val]) => {
+          if (!merged[key]) merged[key] = val;
+          else if (val && typeof val === 'object' && val.lastReview && (!merged[key].lastReview || val.lastReview > merged[key].lastReview)) merged[key] = val;
+        });
+        localStorage.setItem(k, JSON.stringify(merged));
+      }
+    });
     if (typeof SRS !== 'undefined') SRS.updateReviewCount();
+    if (typeof Calendar !== 'undefined') Calendar.renderPanel();
   }).catch(() => {});
 }
 function mergeHistory(local, cloud) {
@@ -941,6 +959,16 @@ function saveSRSCloud() {
   if (!currentUser || !db) return;
   const d = JSON.parse(localStorage.getItem('srs_data') || '{}');
   db.collection('users').doc(currentUser.uid).set({ srs_data: d }, { merge: true });
+}
+// ── Sync ALL data ──
+const SYNC_KEYS = ['study_log','word_notebook','grammar_srs','daily_progress','mock_exam_history'];
+function saveAllCloud() {
+  if (!currentUser || !db) return;
+  const payload = {};
+  SYNC_KEYS.forEach(k => {
+    try { const v = localStorage.getItem(k); if (v) payload[k] = JSON.parse(v); } catch(e) {}
+  });
+  if (Object.keys(payload).length) db.collection('users').doc(currentUser.uid).set(payload, { merge: true });
 }
 function favKey() { return currentMode==='vocab' ? 'v'+currentLevel : currentLevel; }
 function toggleFav(id) {

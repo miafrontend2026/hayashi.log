@@ -102,7 +102,7 @@ const Stats = (() => {
   function getNotebook() {
     try { return JSON.parse(localStorage.getItem('word_notebook')) || []; } catch(e) { return []; }
   }
-  function saveNotebook(nb) { localStorage.setItem('word_notebook', JSON.stringify(nb)); }
+  function saveNotebook(nb) { localStorage.setItem('word_notebook', JSON.stringify(nb)); if (typeof saveAllCloud === 'function') saveAllCloud(); }
 
   function addToNotebook(w, r, m, lv) {
     const nb = getNotebook();

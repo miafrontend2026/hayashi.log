@@ -13,7 +13,7 @@ const GrammarDrill = (() => {
   }
 
   function getSRS() { try { return JSON.parse(localStorage.getItem(GKEY)) || {}; } catch(e) { return {}; } }
-  function saveSRS(d) { localStorage.setItem(GKEY, JSON.stringify(d)); }
+  function saveSRS(d) { localStorage.setItem(GKEY, JSON.stringify(d)); if (typeof saveAllCloud === 'function') saveAllCloud(); }
   function today() { return new Date().toISOString().split('T')[0]; }
 
   function record(id, correct) {

@@ -17,6 +17,7 @@ const Calendar = (() => {
     else if (type === 'grammar') log[d].grammar++;
     else if (type === 'quiz') log[d].quiz++;
     saveLog(log);
+    if (typeof saveAllCloud === 'function') saveAllCloud();
   }
 
   // Calculate streaks
