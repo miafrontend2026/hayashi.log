@@ -529,6 +529,21 @@ body {
   grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 8px; margin-bottom: 24px;
 }
+/* Virtual list slot: fixed height + bottom gap, clip overflow to prevent
+   variable-height cards疊到下一張。Slot height 必須對上 JS itemHeight。 */
+#vl-container .vl-item {
+  height: 100px;
+  box-sizing: border-box;
+  padding-bottom: 8px;
+  overflow: hidden;
+}
+#vl-container .vl-item > .vi {
+  height: 100%;
+  box-sizing: border-box;
+}
+#vl-container .vl-item > .cs {
+  margin-bottom: 0;
+}
 .vi {
   background: var(--bg2); border: 1px solid var(--bd);
   border-radius: var(--r); padding: 14px;
@@ -1532,7 +1547,7 @@ function renderVocab() {
     VirtualList.init({
       container: vlContainer,
       items: vlItems,
-      itemHeight: 92,
+      itemHeight: 100,
       buffer: 15,
       renderItem: (entry) => {
         if (entry.type === 'header') {
