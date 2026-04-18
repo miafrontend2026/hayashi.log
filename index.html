@@ -1075,9 +1075,22 @@ function loadCloudData() {
       if (!d[k]) return;
       const local = JSON.parse(localStorage.getItem(k) || (Array.isArray(d[k]) ? '[]' : '{}'));
       if (Array.isArray(d[k])) {
-        // Array: merge + dedup by JSON string
-        const seen = new Set();
-        const merged = [...local, ...d[k]].filter(x => { const s = JSON.stringify(x); if (seen.has(s)) return false; seen.add(s); return true; });
+        let merged;
+        if (k === 'word_notebook') {
+          // 語意去重：同 (w, lv) 只保留一份（取較早的 added）
+          const byKey = new Map();
+          [...local, ...d[k]].forEach(x => {
+            if (!x || !x.w) return;
+            const key = x.w + '\u0000' + (x.lv || '');
+            const prev = byKey.get(key);
+            if (!prev || (x.added && prev.added && x.added < prev.added)) byKey.set(key, x);
+          });
+          merged = [...byKey.values()];
+        } else {
+          // 其他 array：JSON 字串去重
+          const seen = new Set();
+          merged = [...local, ...d[k]].filter(x => { const s = JSON.stringify(x); if (seen.has(s)) return false; seen.add(s); return true; });
+        }
         localStorage.setItem(k, JSON.stringify(merged));
       } else {
         // Object: cloud values win if newer, local wins otherwise
@@ -1891,6 +1904,29 @@ function updateThemeIcon() {
 }
 initTheme();
 applyI18n();
+
+// 一次性清理：舊版 cloud merge bug 造成 word_notebook 同 (w, lv) 累積重複
+// 修 key: JSON.stringify(entry) → (w, lv)，並同步回 cloud
+(function dedupeNotebook() {
+  try {
+    const raw = localStorage.getItem('word_notebook');
+    if (!raw) return;
+    const nb = JSON.parse(raw);
+    if (!Array.isArray(nb) || nb.length === 0) return;
+    const byKey = new Map();
+    nb.forEach(x => {
+      if (!x || !x.w) return;
+      const key = x.w + '\u0000' + (x.lv || '');
+      const prev = byKey.get(key);
+      if (!prev || (x.added && prev.added && x.added < prev.added)) byKey.set(key, x);
+    });
+    const deduped = [...byKey.values()];
+    if (deduped.length !== nb.length) {
+      localStorage.setItem('word_notebook', JSON.stringify(deduped));
+      if (typeof saveAllCloud === 'function') saveAllCloud();
+    }
+  } catch(e) {}
+})();
 
 // Init
 loadFavorites();
