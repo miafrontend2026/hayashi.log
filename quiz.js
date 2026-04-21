@@ -6,6 +6,7 @@ const Quiz = (() => {
   let results = [];
   let quizType = 'word2meaning';
   let quizLevel = 'n5';
+  let showKanji = false; // word2meaning 題型：預設隱藏漢字（較難、測真實能力）
 
   function start() {
     const box = document.getElementById('quizBox');
@@ -74,12 +75,18 @@ const Quiz = (() => {
     const q = questions[current];
     const box = document.getElementById('quizBox');
     let main, sub;
-    if (quizType === 'word2meaning') { main = q.word.w; sub = q.word.w !== q.word.r ? q.word.r : ''; }
+    // 看日選中：可切換顯示/隱藏漢字（隱藏較難、避免華人用漢字字形直接猜中譯）
+    if (quizType === 'word2meaning') {
+      if (showKanji) { main = q.word.w; sub = q.word.w !== q.word.r ? q.word.r : ''; }
+      else { main = q.word.r; sub = ''; }
+    }
     else if (quizType === 'meaning2word') { main = typeof cvt==='function'?cvt(q.word.m):q.word.m; sub = ''; }
     else { main = q.word.w; sub = t('quiz_reading_sub'); }
+    const kanjiToggle = quizType === 'word2meaning' ?
+      `<button onclick="Quiz.toggleKanji()" style="margin-top:8px;font-size:11px;padding:4px 10px;border:1px solid var(--bd);border-radius:6px;background:var(--bg2);color:var(--tx2);cursor:pointer">${showKanji?'🙈 隱藏漢字':'👁 顯示漢字'}</button>` : '';
     box.innerHTML = `
       <div class="qhd"><span>${current+1} / ${questions.length}</span><span>${t('quiz_score', { n: score })}</span><button class="qclose" style="width:auto;margin:0;padding:2px 10px" onclick="Quiz.close()">✕</button></div>
-      <div class="qprompt"><div class="qmain">${main}</div>${sub?'<div class="qsub">'+sub+'</div>':''}<div style="margin-top:6px"><svg class="spk" style="width:22px;height:22px;opacity:.5" onclick="speak('${(q.word.r || q.word.w).replace(/'/g,"\\'")}')" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/></svg></div></div>
+      <div class="qprompt"><div class="qmain">${main}</div>${sub?'<div class="qsub">'+sub+'</div>':''}<div style="margin-top:6px"><svg class="spk" style="width:22px;height:22px;opacity:.5" onclick="speak('${(q.word.r || q.word.w).replace(/'/g,"\\'")}')" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/></svg></div>${kanjiToggle}</div>
       <div class="qopts">${q.options.map((o,i) => '<button class="qopt" onclick="Quiz.answer('+i+')">'+disp(o)+'</button>').join('')}</div>`;
   }
 
@@ -121,6 +128,7 @@ const Quiz = (() => {
   }
 
   function close() { document.getElementById('quizBg').classList.remove('show'); }
+  function toggleKanji() { showKanji = !showKanji; renderQ(); }
 
-  return { start, begin, answer, close };
+  return { start, begin, answer, close, toggleKanji };
 })();

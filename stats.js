@@ -324,8 +324,8 @@ const Stats = (() => {
     const q = s.questions[s.cur];
     document.getElementById('quizBox').innerHTML = `
       <div class="qhd"><span>${t('weak_progress', { cur: s.cur+1, total: s.questions.length })}</span><span>${t('quiz_score', { n: s.score })}</span><button class="qclose" style="width:auto;margin:0;padding:2px 10px" onclick="document.getElementById('quizBg').classList.remove('show')">✕</button></div>
-      <div class="qprompt"><div class="qmain">${q.word.w}</div>${q.word.w !== q.word.r ? '<div class="qsub">' + q.word.r + '</div>' : ''}</div>
-      <div class="qopts">${q.options.map((o, i) => '<button class="qopt" onclick="Stats._answerWeak(' + i + ')">' + o.m + '</button>').join('')}</div>`;
+      <div class="qprompt"><div class="qmain">${q.word.r || q.word.w}</div></div>
+      <div class="qopts">${q.options.map((o, i) => '<button class="qopt" onclick="Stats._answerWeak(' + i + ')">' + (typeof cvt==='function'?cvt(o.m):o.m) + '</button>').join('')}</div>`;
   }
 
   function _answerWeak(idx) {
