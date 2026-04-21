@@ -323,22 +323,36 @@ const Listening = (() => {
     if (window.speechSynthesis) speechSynthesis.getVoices();
   }
 
+  let lastCountVal = '5';
   function begin() {
-    selectedLevel = document.querySelector('#lsLevel .on').dataset.v;
-    const countVal = document.querySelector('#lsCount .on').dataset.v;
-    practiceMode = document.querySelector('#lsMode .on').dataset.v === 'practice';
+    // 從起始面板讀設定；若從結果頁呼叫則面板不存在，沿用上次（防止按鈕無反應）
+    const lvEl = document.querySelector('#lsLevel .on');
+    const ctEl = document.querySelector('#lsCount .on');
+    const mdEl = document.querySelector('#lsMode .on');
+    if (lvEl) selectedLevel = lvEl.dataset.v;
+    if (ctEl) lastCountVal = ctEl.dataset.v;
+    if (mdEl) practiceMode = mdEl.dataset.v === 'practice';
 
     const pool = items.filter(i => i.level === selectedLevel);
     if (!pool.length) { alert(t('ls_no_data')); return; }
 
     const shuffled = [...pool].sort(() => Math.random() - 0.5);
-    const count = countVal === 'all' ? shuffled.length : Math.min(parseInt(countVal), shuffled.length);
+    const count = lastCountVal === 'all' ? shuffled.length : Math.min(parseInt(lastCountVal), shuffled.length);
     queue = shuffled.slice(0, count);
     score = 0;
     total = queue.length;
     answered = [];
     speedOverride = null;
 
+    renderItem(0);
+  }
+  // 再聽同一批（不重新抽）
+  function retrySame() {
+    if (!queue || !queue.length) return begin();
+    score = 0;
+    total = queue.length;
+    answered = [];
+    speedOverride = null;
     renderItem(0);
   }
 
@@ -475,7 +489,8 @@ const Listening = (() => {
         '<div class="qr ' + (a.correct ? 'ok' : 'ng') + '"><span class="qrc">' + (a.correct ? '✓' : '✗') + '</span><span>' + a.q + '</span><span style="font-size:11px;color:var(--tx3);margin-left:auto">' + a.type + '</span></div>'
       ).join('')}</div>
       <div class="qactions">
-        <button class="qstart" onclick="Listening.begin()">${t('ls_retry')}</button>
+        <button class="qstart" onclick="Listening.begin()">下一組</button>
+        <button class="qstart" style="background:var(--bg3);color:var(--tx)" onclick="Listening.retrySame()">再聽同一組</button>
         <button class="qclose" onclick="Listening.close()">${t('ls_close')}</button>
       </div>`;
   }
@@ -485,5 +500,5 @@ const Listening = (() => {
     document.getElementById('quizBg').classList.remove('show');
   }
 
-  return { start, begin, play, setSpeed, answer, renderItem, showResults, close };
+  return { start, begin, retrySame, play, setSpeed, answer, renderItem, showResults, close };
 })();

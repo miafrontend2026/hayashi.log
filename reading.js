@@ -538,11 +538,23 @@ const Reading = (() => {
   }
 
   function begin() {
-    selectedLevel = document.querySelector('#rdLevel .on').dataset.v;
-    timerEnabled = document.querySelector('#rdTimer .on').dataset.v === '1';
+    // 從起始面板讀設定；若從結果頁呼叫則面板不存在，沿用上次設定（防止按鈕無反應）
+    const lvEl = document.querySelector('#rdLevel .on');
+    const tmEl = document.querySelector('#rdTimer .on');
+    if (lvEl) selectedLevel = lvEl.dataset.v;
+    if (tmEl) timerEnabled = tmEl.dataset.v === '1';
     const pool = passages.filter(p => p.level === selectedLevel);
     if (!pool.length) { alert(t('rd_no_data')); return; }
     currentPassage = pool[Math.floor(Math.random() * pool.length)];
+    currentQ = 0;
+    score = 0;
+    answered = [];
+    timerSeconds = 0;
+    renderPassage();
+  }
+  // 再讀同一篇（不重新抽）
+  function retrySame() {
+    if (!currentPassage) return begin();
     currentQ = 0;
     score = 0;
     answered = [];
@@ -657,7 +669,8 @@ const Reading = (() => {
         '<div class="qr ' + (a.correct ? 'ok' : 'ng') + '"><span class="qrc">' + (a.correct ? '✓' : '✗') + '</span><span>' + a.q + '</span></div>'
       ).join('')}</div>
       <div class="qactions">
-        <button class="qstart" onclick="Reading.begin()">${t('ls_retry')}</button>
+        <button class="qstart" onclick="Reading.begin()">下一篇</button>
+        <button class="qstart" style="background:var(--bg3);color:var(--tx)" onclick="Reading.retrySame()">再讀同一篇</button>
         <button class="qclose" onclick="Reading.close()">${t('ls_close')}</button>
       </div>`;
   }
@@ -679,5 +692,5 @@ const Reading = (() => {
     document.getElementById('quizBg').classList.remove('show');
   }
 
-  return { start, begin, answer, nextQ, showPassageResults, toggleFurigana, close };
+  return { start, begin, retrySame, answer, nextQ, showPassageResults, toggleFurigana, close };
 })();

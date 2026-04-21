@@ -180,7 +180,9 @@ const MockExam = (() => {
 
   // ── Begin exam ──
   function beginExam() {
-    examLevel = document.querySelector('#meLevel .on').dataset.v;
+    // 從起始面板讀 level；從結果頁呼叫時面板不存在，沿用上次
+    const lvEl = document.querySelector('#meLevel .on');
+    if (lvEl) examLevel = lvEl.dataset.v;
     const vocab = getVocab(examLevel);
     const grammar = getGrammar(examLevel);
 

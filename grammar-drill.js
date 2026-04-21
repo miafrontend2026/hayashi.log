@@ -75,10 +75,10 @@ const GrammarDrill = (() => {
     const data = getData(lvl);
     if (!data || !data.length) { alert(t('gd_no_data')); return; }
     const srs = getSRS();
-    const t = today();
+    const todayStr = today();
 
     if (range === 'due') {
-      queue = data.filter(d => { const e = srs[d.id]; return e && e.nextReview <= t; });
+      queue = data.filter(d => { const e = srs[d.id]; return e && e.nextReview <= todayStr; });
       if (!queue.length) {
         // Add some new ones if no due
         const learned = new Set(Object.keys(srs));
