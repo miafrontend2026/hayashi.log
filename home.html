@@ -458,8 +458,8 @@ a:hover { text-decoration: underline; }
 .contact-mail:hover { text-decoration: none; color: var(--ac); }
 .contact-mail:hover::after { transform: scaleX(1.02); }
 @media(max-width:480px) {
-  .support-qr { grid-template-columns: 1fr; gap: 14px; }
-  .qr-card img, .qr-placeholder { width: 160px; height: 160px; }
+  .support-qr { grid-template-columns: 1fr; gap: 14px; max-width: 360px; }
+  .qr-card img { max-width: 320px; }
 }
 
 .ft-links { display: flex; gap: 16px; justify-content: center; margin-top: 12px; }
