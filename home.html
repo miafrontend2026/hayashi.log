@@ -381,28 +381,42 @@ a:hover { text-decoration: underline; }
 .support-msg strong { color: var(--ac); font-weight: 700; }
 .support-qr {
   display: grid; grid-template-columns: 1fr 1fr;
-  gap: 20px; max-width: 560px;
+  gap: 24px; max-width: 640px;
 }
 .qr-card {
   background: var(--bg2); border: 1px solid var(--line);
-  border-radius: var(--r); padding: 24px 16px;
+  border-radius: var(--r); padding: 16px 16px 20px;
   text-align: center; transition: border-color .25s var(--ease);
+  cursor: zoom-in;
 }
 .qr-card:hover { border-color: var(--ac); }
-.qr-card img, .qr-placeholder {
-  display: block; width: 180px; height: 180px;
-  margin: 0 auto 14px; border-radius: 10px;
-  background: var(--bg3);
+.qr-card img {
+  display: block; width: 100%; max-width: 280px;
+  height: auto; margin: 0 auto 14px;
+  border-radius: 8px;
 }
 .qr-placeholder {
   display: flex; align-items: center; justify-content: center;
+  width: 100%; max-width: 280px; aspect-ratio: 1 / 1.5;
+  margin: 0 auto 14px; border-radius: 8px;
   color: var(--tx3); font-size: 12px;
-  border: 2px dashed var(--line);
+  border: 2px dashed var(--line); background: var(--bg3);
 }
 .qr-label {
   font-family: var(--serif); letter-spacing: .05em;
   font-size: 16px; font-weight: 700; color: var(--tx);
 }
+/* Lightbox */
+.qr-lightbox {
+  display: none; position: fixed; inset: 0;
+  background: rgba(0,0,0,.85); z-index: 1000;
+  align-items: center; justify-content: center;
+  padding: 24px; cursor: zoom-out;
+  animation: qrFadeIn .25s var(--ease);
+}
+.qr-lightbox.show { display: flex; }
+.qr-lightbox img { max-width: 90vw; max-height: 90vh; border-radius: 12px; }
+@keyframes qrFadeIn { from { opacity: 0; } to { opacity: 1; } }
 .qr-hint {
   font-size: 12px; color: var(--tx3); margin-top: 4px;
 }
@@ -597,16 +611,19 @@ a:hover { text-decoration: underline; }
   <div class="section-inner">
     <div class="eyebrow reveal">SUPPORT · 支持</div>
     <div class="support-qr" style="margin-top:32px">
-      <div class="qr-card reveal reveal-d2">
+      <div class="qr-card reveal reveal-d2" onclick="openQr('streetpay.jpg')">
         <img src="streetpay.jpg" alt="街口支付 QR Code" loading="lazy">
         <div class="qr-label">街口支付</div>
-        <div class="qr-hint">手機街口 App 掃碼</div>
+        <div class="qr-hint">點圖放大 · 街口 App 掃碼</div>
       </div>
-      <div class="qr-card reveal reveal-d3">
+      <div class="qr-card reveal reveal-d3" onclick="openQr('allpay.jpg')">
         <img src="allpay.jpg" alt="歐付寶 QR Code" loading="lazy">
         <div class="qr-label">歐付寶</div>
-        <div class="qr-hint">手機歐付寶 App 掃碼</div>
+        <div class="qr-hint">點圖放大 · 歐付寶 App 掃碼</div>
       </div>
+    </div>
+    <div class="qr-lightbox" id="qrLightbox" onclick="this.classList.remove('show')">
+      <img id="qrLightboxImg" alt="QR Code 放大">
     </div>
 
     <div class="contact-block reveal reveal-d4">
@@ -752,6 +769,14 @@ function updateThemeIcon() {
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79z"/></svg>';
 }
 initTheme();
+
+// ========== QR LIGHTBOX ==========
+function openQr(src) {
+  const box = document.getElementById('qrLightbox');
+  const img = document.getElementById('qrLightboxImg');
+  img.src = src;
+  box.classList.add('show');
+}
 
 // ========== SCROLL REVEAL ==========
 (() => {
