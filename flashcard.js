@@ -29,17 +29,102 @@ const FlashCard = (() => {
     return Math.ceil((exam - today) / 86400000);
   }
 
+  // JLPT 一年兩次：7月 & 12月的第一個週日。算出未來幾場考試日期。
+  function firstSundayOf(year, month) {
+    for (let day = 1; day <= 7; day++) {
+      const d = new Date(year, month - 1, day);
+      if (d.getDay() === 0) return d;
+    }
+  }
+  function getUpcomingJlptDates(count) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const out = [];
+    let y = today.getFullYear();
+    while (out.length < count) {
+      [[7, '第 1 回 (7月)'], [12, '第 2 回 (12月)']].forEach(([m, label]) => {
+        if (out.length >= count) return;
+        const d = firstSundayOf(y, m);
+        if (d >= today) out.push({ date: d, label: `${d.getFullYear()}/${String(m).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')} JLPT ${label}`, iso: d.toISOString().split('T')[0] });
+      });
+      y++;
+    }
+    return out;
+  }
+
   // ── Vocab source ──
   function getData(lv) {
     if (typeof getVocabData === 'function') return getVocabData(lv);
     return [];
   }
 
+  // ── Styles (絲滑動效) ──
+  function ensureStyles() {
+    if (document.getElementById('fc-styles')) return;
+    const s = document.createElement('style');
+    s.id = 'fc-styles';
+    s.textContent = `
+      #quizBox .fc-card { animation: fcCardIn .24s cubic-bezier(.2,.8,.2,1); }
+      #quizBox .fc-bar-fill { transition: width .1s linear; }
+      #quizBox .fc-face { animation: fcFaceIn .22s ease; }
+      @keyframes fcCardIn { from { opacity: 0; transform: translateY(8px) scale(.98); } to { opacity: 1; transform: none; } }
+      @keyframes fcFaceIn { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: scale(1); } }
+      #quizBox .fc-btn, #quizBox .qstart, #quizBox .qclose, #quizBox .qo button { transition: transform .12s ease, background .15s ease, border-color .15s ease; }
+      #quizBox .fc-btn:active, #quizBox .qstart:active, #quizBox .qo button:active { transform: scale(.96); }
+      #quizBox .qo button.on { transition: background .2s ease; }
+      #quizBox #fcExam { transition: border-color .15s ease, background .15s ease; }
+      #quizBox #fcExam:hover { border-color: var(--ac) !important; }
+    `;
+    document.head.appendChild(s);
+  }
+
+  // ── Live info panel ──
+  function renderStartInfo() {
+    const infoEl = document.getElementById('fcInfo');
+    if (!infoEl) return;
+    const lvEl = document.querySelector('#fcLevel .on');
+    const selEl = document.getElementById('fcExam');
+    const lv = lvEl ? lvEl.dataset.v : 'n5';
+    const data = getData(lv);
+    if (!data || !data.length) { infoEl.innerHTML = '<div style="color:var(--tx2)">此級別無單字資料</div>'; return; }
+    const srs = JSON.parse(localStorage.getItem('srs_data') || '{}');
+    const pf = lv + ':';
+    const learned = Object.keys(srs).filter(k => k.startsWith(pf)).length;
+    const remaining = data.length - learned;
+    const today = new Date().toISOString().split('T')[0];
+    const due = Object.keys(srs).filter(k => k.startsWith(pf) && srs[k].nextReview <= today).length;
+    const examIso = selEl && selEl.value ? selEl.value : '';
+    let html = `<div><strong>${lv.toUpperCase()} 進度：</strong>${learned} / ${data.length}（已學 ${Math.round(learned/data.length*100)}%）</div>`;
+    html += `<div><strong>還要背：</strong>${remaining} 個${due>0?`　<span style="color:var(--ac)">・今日待複習 ${due}</span>`:''}</div>`;
+    if (examIso) {
+      const d = new Date(examIso); d.setHours(0,0,0,0);
+      const t = new Date(); t.setHours(0,0,0,0);
+      const days = Math.ceil((d - t) / 86400000);
+      html += `<div><strong>考試倒數：</strong>${days >= 0 ? days + ' 天' : '已過 ' + (-days) + ' 天'}</div>`;
+      if (days > 0 && remaining > 0) {
+        const perDay = Math.ceil(remaining / days);
+        html += `<div style="color:var(--ac);font-weight:600;margin-top:4px">💡 建議每天背 ${perDay} 個才背得完</div>`;
+      }
+    } else {
+      html += `<div style="color:var(--tx2);font-size:12px;margin-top:4px">選考試日期後可看到每日建議進度</div>`;
+    }
+    infoEl.innerHTML = html;
+  }
+
   // ── Start panel ──
   function start() {
+    ensureStyles();
     const box = document.getElementById('quizBox');
     const curLv = typeof currentLevel !== 'undefined' ? currentLevel : 'n5';
     const exam = getExamDate();
+    const upcoming = getUpcomingJlptDates(6);
+    // 如果已存 exam 不在列表（舊資料 / 自訂），保留它
+    const inList = upcoming.some(x => x.iso === exam);
+    const customOpt = exam && !inList ? `<option value="${exam}" selected>${exam}（自訂）</option>` : '';
+    const examOptions = [
+      `<option value="" ${!exam?'selected':''}>不設定</option>`,
+      customOpt,
+      ...upcoming.map(x => `<option value="${x.iso}" ${x.iso===exam?'selected':''}>${x.label}</option>`)
+    ].join('');
     box.innerHTML = `
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
         <h3 style="margin:0">⚡ 快速背單字</h3>
@@ -60,33 +145,32 @@ const FlashCard = (() => {
       </div></div>
       <div class="qf"><label>範圍</label><div class="qo" id="fcRange">
         <button data-v="new" class="on">新詞為主</button>
-        <button data-v="due">複習待複習</button>
+        <button data-v="due">待複習</button>
         <button data-v="random">全部隨機</button>
       </div></div>
       <div class="qf"><label>考試日期</label>
-        <input type="date" id="fcExam" value="${exam}" style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-family:inherit;font-size:14px;width:100%">
-        <div id="fcExamInfo" style="font-size:12px;color:var(--tx2);margin-top:4px"></div>
+        <select id="fcExam" style="padding:8px 12px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font-family:inherit;font-size:14px;width:100%;cursor:pointer">
+          ${examOptions}
+        </select>
       </div>
+      <div id="fcInfo" style="background:var(--bg3);border:1px solid var(--bd);border-radius:10px;padding:12px;margin:14px 0;font-size:13px;line-height:1.9;color:var(--tx)"></div>
       <button class="qstart" onclick="FlashCard.begin()">開始</button>
       <button class="qclose" onclick="FlashCard.close()">取消</button>`;
     box.querySelectorAll('.qo').forEach(g => {
       g.querySelectorAll('button').forEach(b => {
-        b.onclick = () => { g.querySelectorAll('button').forEach(x => x.classList.remove('on')); b.classList.add('on'); };
+        b.onclick = () => {
+          g.querySelectorAll('button').forEach(x => x.classList.remove('on'));
+          b.classList.add('on');
+          if (g.id === 'fcLevel') renderStartInfo();
+        };
       });
     });
-    const examInput = document.getElementById('fcExam');
-    const info = document.getElementById('fcExamInfo');
-    function updateExamInfo() {
-      const v = examInput.value;
-      if (!v) { info.textContent = '（選填）設定後會顯示倒數天數'; return; }
-      const d = new Date(v); d.setHours(0,0,0,0);
-      const t = new Date(); t.setHours(0,0,0,0);
-      const days = Math.ceil((d - t) / 86400000);
-      info.textContent = days >= 0 ? `距離考試還有 ${days} 天` : `考試日期已過 ${-days} 天`;
-      info.style.color = days < 30 && days >= 0 ? 'var(--ac)' : 'var(--tx2)';
-    }
-    examInput.addEventListener('change', () => { setExamDate(examInput.value); updateExamInfo(); });
-    updateExamInfo();
+    const sel = document.getElementById('fcExam');
+    sel.addEventListener('change', () => {
+      setExamDate(sel.value);
+      renderStartInfo();
+    });
+    renderStartInfo();
     document.getElementById('quizBg').classList.add('show');
   }
 
