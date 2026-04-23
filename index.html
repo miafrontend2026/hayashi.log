@@ -1197,8 +1197,12 @@ function handleAuth() {
 }
 function updateAuthUI() {
   const area = document.getElementById('authArea');
+  if (!area) return;
   if (currentUser) {
-    area.innerHTML = `<span class="auth-btn" style="cursor:default"><img src="${currentUser.photoURL}" alt="">${currentUser.displayName.split(' ')[0]}</span><button class="logout-btn" onclick="handleAuth()">${t('logout')}</button>`;
+    const name = (currentUser.displayName || currentUser.email || 'User').split(' ')[0];
+    const photo = currentUser.photoURL || '';
+    const img = photo ? `<img src="${photo}" alt="" onerror="this.style.display='none'">` : '';
+    area.innerHTML = `<span class="auth-btn" style="cursor:default">${img}${name}</span><button class="logout-btn" onclick="handleAuth()">${t('logout')}</button>`;
   } else {
     area.innerHTML = `<div id="gisBtn" class="gis-slot"></div>`;
     if (gisReady) renderGISBtn();
