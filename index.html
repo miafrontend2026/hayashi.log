@@ -1104,9 +1104,9 @@ select::-ms-expand { display: none; }
 <script src="i18n.js"></script>
 
 <!-- Firebase SDK -->
-<script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.1.0/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
 
 <script>
 // ========== CONFIG ==========
@@ -1124,22 +1124,7 @@ if (fbConfig) {
   firebase.initializeApp(fbConfig);
   auth = firebase.auth();
   db = firebase.firestore();
-  // LOCAL persistence 必須，否則 Safari ITP 會把狀態清掉
-  auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(e => console.warn('setPersistence:', e.message));
   auth.onAuthStateChanged(u => { currentUser = u; updateAuthUI(); loadFavorites(); loadCloudData(); });
-  // 若從 redirect 回來拿結果；失敗時 alert 診斷（只在 iOS Safari 顯示）
-  auth.getRedirectResult().then(result => {
-    if (result && result.user) {
-      console.log('redirect login success:', result.user.email);
-    }
-  }).catch(e => {
-    console.warn('getRedirectResult error:', e.code, e.message);
-    if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-      alert('登入回傳失敗：' + (e.code || '') + '\n' + (e.message || '') +
-            '\n\n可能原因：Safari「防止跨網站追蹤」擋住 Firebase cookie。\n' +
-            '解法：設定 → Safari → 關閉「防止跨網站追蹤」，再試一次。');
-    }
-  });
 }
 
 // ========== AUTH ==========
@@ -1157,35 +1142,10 @@ function showInAppBanner() {
   document.body.appendChild(b);
 }
 
-function isMobile() {
-  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-}
 function handleAuth() {
   if (currentUser) { auth.signOut(); currentUser = null; updateAuthUI(); return; }
   if (isInAppBrowser()) { showInAppBanner(); return; }
-  const provider = new firebase.auth.GoogleAuthProvider();
-  provider.setCustomParameters({ prompt: 'select_account' });
-
-  if (isMobile()) {
-    // 手機強制 redirect（iOS Safari 對 popup 支援爛）
-    try {
-      auth.signInWithRedirect(provider).catch(e => alert('登入失敗 (redirect): ' + (e.code || '') + ' — ' + (e.message || '')));
-    } catch (e) {
-      alert('登入失敗 (sync): ' + e.message);
-    }
-    return;
-  }
-  // 桌機：popup → fallback redirect
-  auth.signInWithPopup(provider).catch(e => {
-    const code = (e && e.code) || '';
-    if (code === 'auth/popup-blocked' || code === 'auth/popup-closed-by-user' ||
-        code === 'auth/cancelled-popup-request' || code === 'auth/web-storage-unsupported' ||
-        code === 'auth/operation-not-supported-in-this-environment') {
-      auth.signInWithRedirect(provider).catch(err => alert('登入失敗: ' + err.message));
-    } else {
-      alert('登入失敗: ' + (e.message || code));
-    }
-  });
+  auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e => alert('登入失敗: ' + e.message));
 }
 function updateAuthUI() {
   const area = document.getElementById('authArea');
