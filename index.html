@@ -1730,8 +1730,31 @@ const Shadow = (() => {
     if (typeof saveAllCloud === 'function') saveAllCloud();
   }
   function isFav(j) { return !!loadFavs()[j]; }
+  // 單字來源（item.w + item.lv）走 word_notebook，跟單字 ★ 統一
+  function isItemFav(item) {
+    if (!item) return false;
+    if (item.w && item.lv) {
+      try {
+        const nb = JSON.parse(localStorage.getItem('word_notebook')) || [];
+        if (nb.some(x => x.w === item.w && x.lv === item.lv)) return true;
+      } catch(e) {}
+    }
+    return isFav(item.j);
+  }
   function toggleFavCurrent() {
     const item = queue[idx]; if (!item) return;
+    // 單字來源：寫 word_notebook
+    if (item.w && item.lv) {
+      let nb; try { nb = JSON.parse(localStorage.getItem('word_notebook')) || []; } catch(e) { nb = []; }
+      const i = nb.findIndex(x => x.w === item.w && x.lv === item.lv);
+      if (i > -1) nb.splice(i, 1);
+      else nb.push({ w: item.w, r: item.j || item.w, m: item.m || '', lv: item.lv, added: new Date().toISOString() });
+      localStorage.setItem('word_notebook', JSON.stringify(nb));
+      if (typeof saveAllCloud === 'function') saveAllCloud();
+      updateFavBtn();
+      return;
+    }
+    // 文法例句：句子層級，沿用 shadow_favs
     const d = loadFavs();
     if (d[item.j]) delete d[item.j];
     else d[item.j] = { j: item.j, z: item.z || '', ts: Date.now() };
@@ -1742,8 +1765,9 @@ const Shadow = (() => {
     const btn = document.getElementById('shadowFav');
     if (!btn) return;
     const item = queue[idx];
-    btn.classList.toggle('on', !!(item && isFav(item.j)));
-    btn.setAttribute('title', isFav(item ? item.j : '') ? '已收藏（F 取消）' : '收藏這句（F）');
+    const on = isItemFav(item);
+    btn.classList.toggle('on', on);
+    btn.setAttribute('title', on ? '已收藏（F 取消）' : '收藏這句（F）');
   }
 
   function renderItem() {
@@ -1883,6 +1907,7 @@ const Shadow = (() => {
   }
   function collectVocabTexts() {
     const out = [];
+    const lv = (typeof currentLevel === 'string') ? currentLevel : '';
     document.querySelectorAll('.vi').forEach(vi => {
       const text = vi.dataset.r || vi.dataset.w;
       const w = vi.dataset.w || '';
@@ -1894,7 +1919,8 @@ const Shadow = (() => {
       if (w && w !== text && m) z = w + ' · ' + m;
       else if (w && w !== text) z = w;
       else if (m) z = m;
-      out.push({ j: text, z });
+      // 帶上 w/lv/m → 收藏走 word_notebook 統一收藏池
+      out.push({ j: text, z, w, lv, m });
     });
     return out;
   }
@@ -1904,16 +1930,32 @@ const Shadow = (() => {
     start(items);
   }
 
-  // 跟讀我的收藏：從 shadow_favs 撈出所有收藏句，洗牌後播放
+  // 跟讀我的收藏：合併 shadow_favs（句子）+ word_notebook（單字），洗牌後播放
   function startFavs() {
     const d = loadFavs();
     const items = Object.values(d).map(f => ({ j: f.j, z: f.z || '' }));
-    if (!items.length) { alert('還沒收藏任何句子。在跟讀模式按 ⭐ 或 F 鍵可加入。'); return; }
+    try {
+      const nb = JSON.parse(localStorage.getItem('word_notebook')) || [];
+      nb.forEach(x => {
+        if (!x || !x.w) return;
+        const j = x.r || x.w;
+        let z = '';
+        if (x.w !== j && x.m) z = x.w + ' · ' + x.m;
+        else if (x.w !== j) z = x.w;
+        else if (x.m) z = x.m;
+        items.push({ j, z, w: x.w, lv: x.lv, m: x.m || '' });
+      });
+    } catch(e) {}
+    if (!items.length) { alert('還沒有收藏。在單字旁點 ★ 或在跟讀按 ⭐ / F 加入。'); return; }
     items.sort(() => Math.random() - 0.5);
     start(items);
   }
 
-  function favCount() { return Object.keys(loadFavs()).length; }
+  function favCount() {
+    let c = Object.keys(loadFavs()).length;
+    try { c += (JSON.parse(localStorage.getItem('word_notebook')) || []).length; } catch(e) {}
+    return c;
+  }
 
   return { startCurrent, startFavs, start, favCount };
 })();
