@@ -66,6 +66,16 @@ export async function audioQuery(text) {
     const apRes = await fetchT(apUrl, { method: 'POST' });
     if (!apRes.ok) throw new Error(`accent_phrases ${apRes.status}: ${await apRes.text()}`);
     const accent_phrases = await apRes.json();
+    // VOICEVOX speaker 2 (四国めたん) 的 h/k/s/t 起首子音偏弱、容易被聽成像沒子音。
+    // kana: override 的詞通常就是因為這原因才被報修，自動把弱子音拉長 + 母音微長讓它清楚。
+    const WEAK = new Set(['h', 'k', 's', 't']);
+    for (const p of accent_phrases) {
+      const m0 = p.moras && p.moras[0];
+      if (m0 && WEAK.has(m0.consonant)) {
+        m0.consonant_length = (m0.consonant_length || 0.05) * 2.5;
+        m0.vowel_length = (m0.vowel_length || 0.07) * 1.3;
+      }
+    }
     return {
       accent_phrases,
       speedScale: 1.0, pitchScale: 0.0, intonationScale: 1.0, volumeScale: 1.0,

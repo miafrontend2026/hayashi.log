@@ -1,0 +1,24 @@
+{
+  "_comment": "Affiliate links — keep this single source of truth and reference from rendering code. Use rel='sponsored noopener' on every <a> per Google SEO guidelines.",
+  "italki": {
+    "url": "https://www.italki.com/affshare?ref=af32106882",
+    "title_zh": "italki 線上日文老師",
+    "desc_zh": "1對1 線上找老師練口說，N3 後想開口的最強選擇",
+    "cta_zh": "找老師練口說 →",
+    "commission_note": "$10 USD/首次完成課程"
+  },
+  "books_com_tw": {
+    "url": "",
+    "title_zh": "博客來 — 日文教材",
+    "desc_zh": "新完全マスター、TRY! 系列等 JLPT 經典教材",
+    "cta_zh": "看推薦書單 →",
+    "commission_note": "4~8% 圖書佣金"
+  },
+  "japanesepod101": {
+    "url": "",
+    "title_zh": "JapanesePod101 聽力 podcast",
+    "desc_zh": "美籍日語老師主持的聽力訂閱頻道，N5~N1 全等級分級",
+    "cta_zh": "免費試聽 →",
+    "commission_note": "35% 訂閱回饋"
+  }
+}
