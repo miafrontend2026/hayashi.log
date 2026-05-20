@@ -1853,34 +1853,28 @@ const Shadow = (() => {
 
   function clearTimer() {
     if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
-    // 不破壞 _sharedAudio reference（要保留 user-activation 上下文），只停掉當下播放
-    if (audioEl) { try { audioEl.onended = null; audioEl.onerror = null; audioEl.pause(); } catch (e) {} audioEl = null; }
+    if (audioEl) { try { audioEl.onended = null; audioEl.pause(); } catch (e) {} audioEl = null; }
     if (window.speechSynthesis) speechSynthesis.cancel();
   }
 
-  // 共用 Audio element：避免 Safari/iOS 對「非使用者啟動的新 Audio」擋掉播放
-  let _sharedAudio = null;
   function playOnce(text, onEnd) {
     if (paused) return;
     const hash = window.__TTS && window.__TTS[text];
     let finished = false;
     const safeEnd = () => {
       if (finished) return; finished = true;
+      audioEl = null;
       if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
       onEnd && onEnd();
     };
     if (hash) {
-      if (!_sharedAudio) _sharedAudio = new Audio();
-      try { _sharedAudio.pause(); } catch (e) {}
-      _sharedAudio.onended = safeEnd;
-      _sharedAudio.onerror = safeEnd;
-      _sharedAudio.src = 'audio/tts/' + hash + '.mp3';
-      _sharedAudio.playbackRate = speed;
-      _sharedAudio.currentTime = 0;
-      audioEl = _sharedAudio;
+      audioEl = new Audio('audio/tts/' + hash + '.mp3');
+      audioEl.playbackRate = speed;
+      audioEl.onended = safeEnd;
+      audioEl.onerror = safeEnd;
       const fallbackMs = Math.max(3000, text.length * 250 / speed);
       pendingTimer = setTimeout(safeEnd, fallbackMs);
-      _sharedAudio.play()
+      audioEl.play()
         .then(() => {
           if (audioEl && isFinite(audioEl.duration) && audioEl.duration > 0) {
             if (pendingTimer) clearTimeout(pendingTimer);
