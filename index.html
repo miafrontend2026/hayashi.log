@@ -1824,8 +1824,19 @@ const Shadow = (() => {
         out += escapeHtml(text[i]); i++; continue;
       }
       if (matched) {
-        out += `<ruby>${escapeHtml(matched.sub)}<rt>${escapeHtml(matched.reading)}</rt></ruby>`;
-        i += matched.sub.length;
+        const tok = matched.sub, rd = matched.reading;
+        // 漢字+okurigana 的 token（如「進めます」→「すすめます」）只在漢字部分加 ruby，
+        // hiragana 尾巴維持純文字，避免 ruby 視覺上蓋到假名
+        const tailM = tok.match(/[ぁ-ゖ]+$/);
+        const tail = tailM ? tailM[0] : '';
+        if (tail && rd.endsWith(tail)) {
+          const kj = tok.slice(0, tok.length - tail.length);
+          const kjRd = rd.slice(0, rd.length - tail.length);
+          out += `<ruby>${escapeHtml(kj)}<rt>${escapeHtml(kjRd)}</rt></ruby>${escapeHtml(tail)}`;
+        } else {
+          out += `<ruby>${escapeHtml(tok)}<rt>${escapeHtml(rd)}</rt></ruby>`;
+        }
+        i += tok.length;
       } else {
         out += escapeHtml(text[i]); i++;
       }
