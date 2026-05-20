@@ -1659,6 +1659,7 @@ const Shadow = (() => {
   let pendingTimer = null;
   let speed = 1.0; // 0.75 / 1 / 1.25
   let repeatWindow = true; // include shadow-repeat pause between plays
+  let showFurigana = localStorage.getItem('shadow_furigana') === '1';
 
   function open() {
     closeOverlay();
@@ -1681,6 +1682,7 @@ const Shadow = (() => {
       <div class="shadow-options">
         <label>速度 <select id="shadowSpeed"><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option></select></label>
         <label><input type="checkbox" id="shadowRepeat" checked> 跟讀停頓</label>
+        <label><input type="checkbox" id="shadowFurigana"> 漢字＋ひらがな</label>
       </div>
       <div class="shadow-hint">Space 暫停 · ← → 切換 · R 重播 · Esc 退出</div>
     </div>`;
@@ -1703,6 +1705,13 @@ const Shadow = (() => {
     });
     document.getElementById('shadowRepeat').addEventListener('change', e => {
       repeatWindow = e.target.checked;
+    });
+    const fgEl = document.getElementById('shadowFurigana');
+    fgEl.checked = showFurigana;
+    fgEl.addEventListener('change', e => {
+      showFurigana = e.target.checked;
+      localStorage.setItem('shadow_furigana', showFurigana ? '1' : '0');
+      renderItem();
     });
     document.addEventListener('keydown', onKey);
   }
@@ -1784,9 +1793,18 @@ const Shadow = (() => {
     const zEl = document.getElementById('shadowZ');
     if (!idxEl) return;
     idxEl.textContent = idx + 1;
-    jEl.textContent = item.j;
+    // 漢字 ＋ ひらがな（furigana ruby）模式：要有 item.w (漢字) 且不同於 item.j (假名) 才顯示 ruby；
+    // 其他情況（純假名單字、文法例句沒帶 w）退回純文字
+    if (showFurigana && item.w && item.j && item.w !== item.j) {
+      jEl.innerHTML = `<ruby>${escapeHtml(item.w)}<rt>${escapeHtml(item.j)}</rt></ruby>`;
+    } else {
+      jEl.textContent = item.j;
+    }
     zEl.textContent = item.z || '';
     updateFavBtn();
+  }
+  function escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function setStatus(s) {
