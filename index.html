@@ -1249,21 +1249,8 @@ if (fbConfig) {
   auth = firebase.auth();
   db = firebase.firestore();
   auth.onAuthStateChanged(u => { currentUser = u; updateAuthUI(); loadFavorites(); loadCloudData(); if (typeof Streak !== 'undefined') { Streak.syncDown(); Streak.render(); } });
-  // 累計學員計數：CNAME root 多半直接打 index.html，原本只在 home.html bump 會嚴重低估。
-  // localStorage flag 'learner_counted_v1' 跟 home.html 共用，不會重複計。
-  (async function bumpLearnerCount() {
-    if (localStorage.getItem('learner_counted_v1')) return;
-    try {
-      const ref = db.collection('stats').doc('global');
-      await ref.update({ learners: firebase.firestore.FieldValue.increment(1) });
-      localStorage.setItem('learner_counted_v1', '1');
-    } catch (e) {
-      try {
-        await db.collection('stats').doc('global').set({ learners: 1 }, { merge: true });
-        localStorage.setItem('learner_counted_v1', '1');
-      } catch (e2) { /* swallow */ }
-    }
-  })();
+  // 累計學員計數的 +1 移除：每位訪客寫 1 次 → Firestore Spark 方案 20K 寫/日上限會吃光配額
+  // 改由 GitHub Actions cron 每天從 GA newUsers 覆寫 stats/global.learners
 }
 
 // ========== AUTH ==========

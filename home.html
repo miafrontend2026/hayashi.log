@@ -756,20 +756,12 @@ a:hover { text-decoration: underline; }
     projectId: 'jpnote-1bdd6',
   });
   const db = firebase.firestore();
-  const COUNTED_KEY = 'learner_counted_v1';
   const ref = db.collection('stats').doc('global');
   const el = document.getElementById('learnersCount');
 
-  async function bumpIfNew() {
-    if (localStorage.getItem(COUNTED_KEY)) return;
-    try {
-      // Try +1 on existing doc first; if doc doesn't exist yet, seed with 1.
-      await ref.update({ learners: firebase.firestore.FieldValue.increment(1) });
-    } catch (e) {
-      try { await ref.set({ learners: 1 }); } catch (e2) { /* swallow */ }
-    }
-    localStorage.setItem(COUNTED_KEY, '1');
-  }
+  // 客戶端 +1 移除：每訪客寫一次 → Firestore Spark 方案 20K 寫/日吃光配額。
+  // 改由 GitHub Actions cron 每天從 GA newUsers 覆寫 stats/global.learners。
+  async function bumpIfNew() { /* no-op */ }
 
   async function render() {
     try {
