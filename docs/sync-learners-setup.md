@@ -1,55 +1,86 @@
-# 同步 GA4 → Firestore learners 計數 — 安裝步驟
+# 同步 GA4 → Firestore learners 計數 — 安裝步驟（OAuth refresh token 版）
 
-GitHub Actions cron 每天跑一次：抓 GA4 累計 newUsers → 覆寫 Firestore `stats/global.learners`。
+之前試 service account 路線被 GA4 UI 拒接 SA email。改用個人 OAuth 一把鑰匙打開 GA 跟 Firestore 兩道門（你本人是 GCP project owner + GA admin，scope 涵蓋兩邊）。
 
-## 1. 啟用 GA4 Data API
+每天 cron 跑一次：抓 GA4 累計 newUsers → 覆寫 Firestore `stats/global.learners`。
 
-1. 開 [Google Cloud Console](https://console.cloud.google.com/)，左上選 project **jpnote-1bdd6**（Firebase 同 project）
-2. 「APIs & Services → Library」搜 **Google Analytics Data API**，按 Enable
+## 1. 確認 GA4 Data API 已啟用
 
-## 2. 建 service account
+[Google Cloud Console → APIs Library](https://console.cloud.google.com/apis/library/analyticsdata.googleapis.com?project=jpnote-1bdd6) → Enable（之前可能已開）
 
-1. 「IAM & Admin → Service Accounts → Create service account」
-   - Name：`learners-sync`
-   - Grant role：**Cloud Datastore User**（給 Firestore 寫權）
-2. 完成後點進去 → Keys → Add key → Create new key → JSON → 下載
-3. 把整個 JSON 內容（含 `{...}`）複製起來
+## 2. 設定 OAuth consent screen
 
-## 3. 在 GA4 授權 service account
+如果之前沒設過：
 
-1. 打開 [Google Analytics](https://analytics.google.com/) → Admin（左下齒輪）
-2. Property → Property access management → +
-3. 新增剛剛 service account 的 email（`learners-sync@jpnote-1bdd6.iam.gserviceaccount.com`）
-4. Role：**Viewer**
+1. [APIs & Services → OAuth consent screen](https://console.cloud.google.com/apis/credentials/consent?project=jpnote-1bdd6)
+2. User Type：**External**（個人 Google 帳號用）
+3. App name 隨便（`stayjp-learners-sync`）
+4. User support email + Developer email 填你的 Gmail
+5. Scopes 步驟先跳過（後面 Playground 會帶）
+6. Test users：加 `abc83327@gmail.com`（你本人）
+7. Save
 
-## 4. 找 GA4 Property ID
+> Publishing status 留 `Testing` 就好。test user list 裡的帳號可以無限期用，不會 7 天過期。
 
-GA4 Admin → Property details → 上面有個 9 位數 Property ID（純數字、不是 `G-XXXXX` 那個）
+## 3. 建立 OAuth Client ID
 
-## 5. 設 GitHub Secrets
+1. [APIs & Services → Credentials](https://console.cloud.google.com/apis/credentials?project=jpnote-1bdd6) → + Create Credentials → **OAuth client ID**
+2. Application type：**Web application**
+3. Name：`learners-sync-oauth`
+4. **Authorized redirect URIs** 加一條：
+   ```
+   https://developers.google.com/oauthplayground
+   ```
+5. Create → 跳出視窗顯示 **Client ID** 跟 **Client Secret** → 複製下來（之後也可以從 Credentials 列表再看）
 
-repo `miabuilds/stayjp.study` → Settings → Secrets and variables → Actions → New repository secret：
+## 4. 拿 refresh token（OAuth Playground）
+
+1. 打開 [OAuth 2.0 Playground](https://developers.google.com/oauthplayground/)
+2. 右上齒輪 ⚙ → 勾「**Use your own OAuth credentials**」→ 貼步驟 3 的 Client ID + Secret
+3. 左邊 Step 1「Select & authorize APIs」最下面的 **Input your own scopes** 框，貼這兩條（用空白或逗號隔開）：
+   ```
+   https://www.googleapis.com/auth/analytics.readonly https://www.googleapis.com/auth/datastore
+   ```
+4. **Authorize APIs** → 用你的 Gmail 登入 → 同意授權
+5. Step 2「Exchange authorization code for tokens」→ 點 **Exchange authorization code for tokens**
+6. 右側出現 **Refresh token**（一長串 `1//...`）→ 複製下來
+
+> 這 refresh token 只要不主動撤銷就**永久有效**。
+
+## 5. 找 GA4 Property ID
+
+[GA4 Admin → Property details](https://analytics.google.com/) → 9 位數純數字 ID（不是 `G-XXXXX`）
+
+## 6. 設 GitHub Secrets
+
+[repo Settings → Secrets and variables → Actions](https://github.com/miabuilds/stayjp.study/settings/secrets/actions) → 加四條：
 
 | Name | Value |
 |---|---|
-| `GCP_SA_KEY` | 步驟 2 下載的 JSON 整段內容 |
-| `GA4_PROPERTY_ID` | 步驟 4 的純數字 ID |
+| `OAUTH_CLIENT_ID` | 步驟 3 的 Client ID |
+| `OAUTH_CLIENT_SECRET` | 步驟 3 的 Client Secret |
+| `OAUTH_REFRESH_TOKEN` | 步驟 4 的 refresh token |
+| `GA4_PROPERTY_ID` | 步驟 5 的 9 位數 ID |
 
-## 6. 手動觸發測一次
+## 7. 手動觸發測
 
-GitHub repo → Actions → 「Sync learners from GA4」→ Run workflow
+[Actions → Sync learners from GA4 → Run workflow](https://github.com/miabuilds/stayjp.study/actions/workflows/sync-learners.yml)
 
-跑完看 log 應該有：
+跑完 log 看到：
 ```
-GA newUsers (2025-01-01~today): 14XXX
-Firestore stats/global.learners: XXX → 14XXX
+Got OAuth access token
+GA newUsers (2025-01-01~today): 15234
+Firestore stats/global.learners ← 15234
 ```
 
-之後 Firebase Console 看 `stats/global` 文檔 `learners` 欄就會是 GA 數字，再加 `lastSyncedAt` 時間戳。
+回 Firebase Console 看 `stats/global` 就是 GA 數字。
+
+## 8. 取消註解排程
+
+[.github/workflows/sync-learners.yml](.github/workflows/sync-learners.yml) 把 schedule 區塊取消註解 → commit → 每天 UTC 03:00 自動同步。
 
 ## 維運提示
 
-- cron 每天 UTC 03:00 跑（台灣 11:00 AM）
-- 客戶端的 `+1 increment` 機制保留，cron 之間訪客 +1 即時感保留，下次 cron 來覆寫
+- refresh token 不過期，但若 OAuth consent screen 改設定 / Client 被刪除會失效
 - 起算日預設 2025-01-01，要改去 workflow 加 env `GA_START_DATE`
-- service account JSON 旋轉：去 Cloud Console SA 頁面 → Keys 刪舊建新 → 更新 GitHub secret
+- 客戶端 +1 increment 還在跑當即時感，下次 cron 來覆寫

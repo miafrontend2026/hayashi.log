@@ -1,8 +1,7 @@
 name: Sync learners from GA4
 
 on:
-  # 排程暫時關掉 — GA4 UI 拒接 service account，secrets 還沒設好。
-  # 之後 GA SA 補上 + GitHub secrets 設好，把下面 schedule 區塊取消註解就好。
+  # 排程暫時關掉；等 secrets 設好再取消註解
   # schedule:
   #   - cron: '0 3 * * *'  # 每天 UTC 03:00 (台灣 11:00 AM)
   workflow_dispatch:
@@ -10,20 +9,16 @@ on:
 jobs:
   sync:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 3
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: '20'
-      - name: Install deps
-        run: |
-          mkdir -p /tmp/sync-learners && cd /tmp/sync-learners
-          npm init -y > /dev/null
-          npm install --silent @google-analytics/data@^4 firebase-admin@^12
       - name: Run sync
         env:
-          NODE_PATH: /tmp/sync-learners/node_modules
-          GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+          OAUTH_CLIENT_ID: ${{ secrets.OAUTH_CLIENT_ID }}
+          OAUTH_CLIENT_SECRET: ${{ secrets.OAUTH_CLIENT_SECRET }}
+          OAUTH_REFRESH_TOKEN: ${{ secrets.OAUTH_REFRESH_TOKEN }}
           GA4_PROPERTY_ID: ${{ secrets.GA4_PROPERTY_ID }}
         run: node scripts/sync-learners-from-ga.mjs
