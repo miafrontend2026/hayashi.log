@@ -1,9 +1,10 @@
 name: Sync learners from GA4
 
 on:
-  schedule:
-    # 每天 UTC 03:00 (台灣 11:00 AM) 跑一次
-    - cron: '0 3 * * *'
+  # 排程暫時關掉 — GA4 UI 拒接 service account，secrets 還沒設好。
+  # 之後 GA SA 補上 + GitHub secrets 設好，把下面 schedule 區塊取消註解就好。
+  # schedule:
+  #   - cron: '0 3 * * *'  # 每天 UTC 03:00 (台灣 11:00 AM)
   workflow_dispatch:
 
 jobs:
