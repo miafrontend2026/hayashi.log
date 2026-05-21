@@ -1249,6 +1249,21 @@ if (fbConfig) {
   auth = firebase.auth();
   db = firebase.firestore();
   auth.onAuthStateChanged(u => { currentUser = u; updateAuthUI(); loadFavorites(); loadCloudData(); if (typeof Streak !== 'undefined') { Streak.syncDown(); Streak.render(); } });
+  // 累計學員計數：CNAME root 多半直接打 index.html，原本只在 home.html bump 會嚴重低估。
+  // localStorage flag 'learner_counted_v1' 跟 home.html 共用，不會重複計。
+  (async function bumpLearnerCount() {
+    if (localStorage.getItem('learner_counted_v1')) return;
+    try {
+      const ref = db.collection('stats').doc('global');
+      await ref.update({ learners: firebase.firestore.FieldValue.increment(1) });
+      localStorage.setItem('learner_counted_v1', '1');
+    } catch (e) {
+      try {
+        await db.collection('stats').doc('global').set({ learners: 1 }, { merge: true });
+        localStorage.setItem('learner_counted_v1', '1');
+      } catch (e2) { /* swallow */ }
+    }
+  })();
 }
 
 // ========== AUTH ==========
