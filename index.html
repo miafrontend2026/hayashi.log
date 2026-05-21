@@ -1872,24 +1872,30 @@ const Shadow = (() => {
     if (window.speechSynthesis) speechSynthesis.cancel();
   }
 
+  // 共用同一個 Audio element：許多瀏覽器對「快速連續 new Audio()」有 autoplay 限制，
+  // 用同一個元素只改 src 比較穩定，第一句之後也不會被 block。
+  let _sharedAudio = null;
   function playOnce(text, onEnd) {
     if (paused) return;
     const hash = window.__TTS && window.__TTS[text];
     let finished = false;
     const safeEnd = () => {
       if (finished) return; finished = true;
-      audioEl = null;
       if (pendingTimer) { clearTimeout(pendingTimer); pendingTimer = null; }
       onEnd && onEnd();
     };
     if (hash) {
-      audioEl = new Audio('audio/tts/' + hash + '.mp3');
-      audioEl.playbackRate = speed;
-      audioEl.onended = safeEnd;
-      audioEl.onerror = safeEnd;
+      if (!_sharedAudio) _sharedAudio = new Audio();
+      try { _sharedAudio.pause(); } catch (e) {}
+      _sharedAudio.onended = safeEnd;
+      _sharedAudio.onerror = safeEnd;
+      _sharedAudio.src = 'audio/tts/' + hash + '.mp3';
+      _sharedAudio.playbackRate = speed;
+      _sharedAudio.currentTime = 0;
+      audioEl = _sharedAudio;
       const fallbackMs = Math.max(3000, text.length * 250 / speed);
       pendingTimer = setTimeout(safeEnd, fallbackMs);
-      audioEl.play()
+      _sharedAudio.play()
         .then(() => {
           if (audioEl && isFinite(audioEl.duration) && audioEl.duration > 0) {
             if (pendingTimer) clearTimeout(pendingTimer);
