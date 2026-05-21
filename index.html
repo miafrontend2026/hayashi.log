@@ -1954,6 +1954,12 @@ const Shadow = (() => {
     idx = 0; stage = 0; paused = false;
     open();
     track('shadow_start', { count: items.length, mode: currentMode, level: currentLevel });
+    // iOS Safari unlock：在 user-gesture context 下先播靜音 buffer 讓 _sharedAudio 取得
+    // 自動播放許可。否則之後 setTimeout 觸發的 play() 會被 iOS autoplay policy 擋掉
+    // （第二句後沒聲音的根因）
+    if (!_sharedAudio) _sharedAudio = new Audio();
+    _sharedAudio.src = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEARKwAAESsAAABAAgAZGF0YQAAAAA=';
+    _sharedAudio.play().catch(() => {});
     step();
   }
 
@@ -2947,10 +2953,29 @@ function fixHeaderHeight() {
 }
 window.addEventListener('resize', fixHeaderHeight);
 
-// Service Worker — force update check on every load
+// Service Worker — force update check on every load + 偵測新版自動 reload
 if ('serviceWorker' in navigator) {
+  let __reloadedForSW = false;
+  // 新 SW activate（取得控制權）就 reload，使用者拿到的就是新 code
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (__reloadedForSW) return;
+    __reloadedForSW = true;
+    location.reload();
+  });
   navigator.serviceWorker.register('./sw.js').then(reg => {
     reg.update();
+    // 新 SW 安裝完跳轉到 waiting，叫他 skipWaiting 立刻 activate
+    if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    reg.addEventListener('updatefound', () => {
+      const nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener('statechange', () => {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+          // 已有 SW 在控制（非首次安裝），新版裝好就立刻換
+          nw.postMessage({ type: 'SKIP_WAITING' });
+        }
+      });
+    });
   }).catch(() => {});
 }
 

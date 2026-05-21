@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stayjp-v122';
+const CACHE_NAME = 'stayjp-v123';
 const ASSETS = [
   './',
   './index.html',
@@ -40,6 +40,11 @@ self.addEventListener('install', e => {
       .then(cache => cache.addAll(ASSETS))
       .then(() => self.skipWaiting())
   );
+});
+
+// 客戶端發 SKIP_WAITING 訊息 → 立刻 activate
+self.addEventListener('message', e => {
+  if (e.data && e.data.type === 'SKIP_WAITING') self.skipWaiting();
 });
 
 // Fetch: cache-first, fallback to network
