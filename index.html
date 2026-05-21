@@ -2472,6 +2472,22 @@ const CATS_N4 = [
   {name:"アスペクト",icon:"相"},{name:"敬語",icon:"敬"},{name:"義務・許可",icon:"規"},
   {name:"比較",icon:"比"},{name:"引用・思考",icon:"引"},{name:"口語・助詞",icon:"口"}
 ];
+// N3/N2/N1 cats 從 grammar-n*.js 拉進來 — grammar 資料移到 Firestore 後這些檔不再載入，cats 改放這
+const CATS_N3 = [
+  {name:"接続・原因",icon:"接"},{name:"時間",icon:"時"},{name:"条件・仮定",icon:"条"},
+  {name:"範囲・限定",icon:"限"},{name:"比較・程度",icon:"比"},{name:"様態・傾向",icon:"様"},
+  {name:"主張・強調",icon:"強"},{name:"その他",icon:"他"}
+];
+const CATS_N2 = [
+  {name:"時間・変化",icon:"時"},{name:"原因・理由",icon:"因"},{name:"逆接・対比",icon:"逆"},
+  {name:"条件・仮定",icon:"条"},{name:"範囲・限定",icon:"限"},{name:"程度・強調",icon:"程"},
+  {name:"話題・評価",icon:"話"},{name:"文末表現",icon:"末"},{name:"その他",icon:"他"}
+];
+const CATS_N1 = [
+  {name:"限定・強調",icon:"強"},{name:"時間・変化",icon:"時"},{name:"原因・理由",icon:"因"},
+  {name:"逆接・譲歩",icon:"逆"},{name:"程度・比較",icon:"比"},{name:"話題・評価",icon:"話"},
+  {name:"文末・書き言葉",icon:"文"},{name:"その他",icon:"他"}
+];
 
 // ========== VOCAB CATEGORIES ==========
 const VOCAB_CATS = [
@@ -2666,11 +2682,12 @@ function renderConfuse() {
 
 // ========== RENDER GRAMMAR ==========
 function getGrammarData(lv) {
-  if (lv === 'n5') return { data: N5, cats: CATS_N5 };
-  if (lv === 'n4') return { data: N4, cats: CATS_N4 };
-  if (lv === 'n3' && typeof N3 !== 'undefined') return { data: N3, cats: CATS_N3 };
-  if (lv === 'n2' && typeof N2 !== 'undefined') return { data: N2, cats: CATS_N2 };
-  if (lv === 'n1' && typeof N1 !== 'undefined') return { data: N1, cats: CATS_N1 };
+  // N5/N4/N3/N2/N1 grammar 從 Firestore 載入後設成 window globals；資料還沒到時用空陣列防 ReferenceError
+  if (lv === 'n5') return { data: typeof N5 !== 'undefined' ? N5 : [], cats: CATS_N5 };
+  if (lv === 'n4') return { data: typeof N4 !== 'undefined' ? N4 : [], cats: CATS_N4 };
+  if (lv === 'n3') return { data: typeof N3 !== 'undefined' ? N3 : [], cats: CATS_N3 };
+  if (lv === 'n2') return { data: typeof N2 !== 'undefined' ? N2 : [], cats: CATS_N2 };
+  if (lv === 'n1') return { data: typeof N1 !== 'undefined' ? N1 : [], cats: CATS_N1 };
   return { data: [], cats: [] };
 }
 function render() {
@@ -2747,7 +2764,7 @@ function render() {
   mn.innerHTML = h;
   document.getElementById('stats').textContent = `${vc} / ${data.length}`;
   updateFavCount();
-  const grammarTotal = N5.length + N4.length + (typeof N3!=='undefined'?N3.length:0) + (typeof N2!=='undefined'?N2.length:0) + (typeof N1!=='undefined'?N1.length:0);
+  const grammarTotal = (typeof N5!=='undefined'?N5.length:0) + (typeof N4!=='undefined'?N4.length:0) + (typeof N3!=='undefined'?N3.length:0) + (typeof N2!=='undefined'?N2.length:0) + (typeof N1!=='undefined'?N1.length:0);
   document.getElementById('ftInfo').textContent = t('ft_grammar', { total: grammarTotal });
 
   // Sidebar

@@ -41,33 +41,21 @@ for (const lv of ['n5','n4','n3','n2','n1']) {
   if (!data.vocab[lv]) throw new Error(`vocab-${lv} 抽取失敗`);
 }
 data.grammar = {};
-for (const lv of ['n3','n2','n1']) {
+for (const lv of ['n5','n4','n3','n2','n1']) {
   data.grammar[lv] = evalJs(readJs(`grammar-${lv}.js`), lv.toUpperCase());
   if (!data.grammar[lv]) throw new Error(`grammar-${lv} 抽取失敗`);
 }
-// N5/N4 grammar inline 在 index.html
-const html = readJs('index.html');
-const n5m = html.match(/(const N5 = \[[\s\S]*?\n\]);/);
-const n4m = html.match(/(const N4 = \[[\s\S]*?\n\]);/);
-if (!n5m || !n4m) throw new Error('N5/N4 inline grammar 抽取失敗');
-data.grammar.n5 = evalJs(n5m[1], 'N5');
-data.grammar.n4 = evalJs(n4m[1], 'N4');
 
 // CONFUSABLES
 data.confusables = evalJs(readJs('confusables.js').replace(/if \(typeof module[\s\S]*$/, ''), 'CONFUSABLES');
 if (!data.confusables) throw new Error('confusables 抽取失敗');
 
-// listening items
-const lsrc = readJs('listening.js');
-const lm = lsrc.match(/(const items = \[[\s\S]*?\n  \]);/);
-if (!lm) throw new Error('listening items 抽取失敗');
-data.listening_items = evalJs(lm[1].replace('const items', 'const _it'), '_it');
-
-// reading passages
-const rsrc = readJs('reading.js');
-const rm = rsrc.match(/(const passages = \[[\s\S]*?\n  \]);/);
-if (!rm) throw new Error('reading passages 抽取失敗');
-data.reading_passages = evalJs(rm[1].replace('const passages', 'const _p'), '_p');
+// listening items / reading passages：抽出來放獨立資料檔（listening.js / reading.js
+// IIFE 內部結構不適合 migration 讀，獨立 SRC 檔當 source of truth）
+data.listening_items = evalJs(readJs('listening-items.js'), 'LISTENING_ITEMS_SRC');
+if (!data.listening_items) throw new Error('listening-items.js 抽取失敗');
+data.reading_passages = evalJs(readJs('reading-passages.js'), 'READING_PASSAGES_SRC');
+if (!data.reading_passages) throw new Error('reading-passages.js 抽取失敗');
 
 const json = JSON.stringify(data);
 const version = crypto.createHash('sha1').update(json).digest('hex').slice(0, 12);
