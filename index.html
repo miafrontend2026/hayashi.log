@@ -1156,6 +1156,7 @@ select::-ms-expand { display: none; }
     <button class="mode-pill on" onclick="switchMode('grammar')" data-i18n="grammar">文法</button>
     <button class="mode-pill" onclick="switchMode('vocab')" data-i18n="vocab">單字</button>
     <button class="mode-pill" onclick="switchMode('confuse')" data-i18n="compare">比較</button>
+    <button class="mode-pill" onclick="showParticles()" title="跳到 N5 助詞列表">助詞</button>
     <div class="hd-sep"></div>
     <div id="tabsBar" style="display:contents"></div>
     <div class="hd-sep"></div>
@@ -1185,6 +1186,11 @@ select::-ms-expand { display: none; }
   <hr style="border:none;border-top:1px solid var(--bd);margin:4px 0">
   <button class="more-item" onclick="closeMore();Stats.open();setTimeout(function(){Stats.switchTab('notebook')},50)" data-i18n="notebook">生詞本</button>
   <button class="more-item" onclick="closeMore();Stats.open();setTimeout(function(){Stats.switchTab('history')},50)" data-i18n="exam_history">考試紀錄</button>
+  <hr style="border:none;border-top:1px solid var(--bd);margin:4px 0">
+  <div style="padding:8px 12px">
+    <div style="font-size:12px;color:var(--tx2);margin-bottom:4px">🔊 語速 <span id="ttsSpeedLabel">1.0x</span></div>
+    <input type="range" id="ttsSpeedSlider" min="0.5" max="1.5" step="0.05" value="1" style="width:100%" oninput="setTtsSpeed(this.value)">
+  </div>
 </div>
 
 <nav class="sd" id="sd"></nav>
@@ -1553,6 +1559,22 @@ let searchTerm = '';
   updateTabs();
 })();
 
+// 助詞快捷：切到 N5 文法、捲到「助詞」分類
+function showParticles() {
+  switchMode('grammar');
+  currentLevel = 'n5';
+  localStorage.setItem('lastLevel', 'n5');
+  updateTabs();
+  doRender();
+  setTimeout(() => {
+    const el = document.getElementById('cat-助詞');
+    if (el) {
+      el.classList.add('o');  // 展開
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 100);
+}
+
 function switchMode(mode) {
   currentMode = mode;
   showFavOnly = false;
@@ -1613,13 +1635,34 @@ function hiraToKata(s) {
   // Forcing katakana avoids that quirk.
   return String(s||'').replace(/[ぁ-ゖ]/g, c => String.fromCharCode(c.charCodeAt(0) + 0x60));
 }
+// 全局語速 — 跟讀以外的 speak() 也用這個。 0.5x ~ 1.5x。預設 1.0
+function getTtsSpeed() {
+  const v = parseFloat(localStorage.getItem('tts_speed') || '1');
+  return Number.isFinite(v) && v >= 0.5 && v <= 2 ? v : 1;
+}
+function setTtsSpeed(v) {
+  const f = parseFloat(v);
+  if (!Number.isFinite(f)) return;
+  localStorage.setItem('tts_speed', String(f));
+  const lbl = document.getElementById('ttsSpeedLabel');
+  if (lbl) lbl.textContent = f.toFixed(2).replace(/\.?0+$/, '') + 'x';
+}
+// 開啟更多選單時把 slider 初始值對到目前 setting
+function syncTtsSpeedSlider() {
+  const sl = document.getElementById('ttsSpeedSlider');
+  const lbl = document.getElementById('ttsSpeedLabel');
+  if (!sl) return;
+  const v = getTtsSpeed();
+  sl.value = String(v);
+  if (lbl) lbl.textContent = v.toFixed(2).replace(/\.?0+$/, '') + 'x';
+}
 let __ttsAudio = null;
 function speakBrowser(text) {
   if (!window.speechSynthesis) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(hiraToKata(text));
   u.lang = 'ja-JP';
-  u.rate = 0.85;
+  u.rate = 0.85 * getTtsSpeed();  // 0.85 是 base rate，再乘使用者設定
   const voices = speechSynthesis.getVoices();
   const jaVoice = voices.find(v => v.lang.startsWith('ja'));
   if (jaVoice) u.voice = jaVoice;
@@ -1635,6 +1678,7 @@ function speak(text) {
   track('audio_play', { source: hash ? 'voicevox' : 'browser_tts', mode: currentMode });
   if (hash) {
     __ttsAudio = new Audio('audio/tts/' + hash + '.mp3');
+    __ttsAudio.playbackRate = getTtsSpeed();
     __ttsAudio.play().catch(() => speakBrowser(t));
     return;
   }
@@ -2998,6 +3042,7 @@ setTimeout(()=>{ if(typeof SRS!=='undefined') SRS.updateReviewCount(); }, 100);
 function openMoreMenu() {
   var m = document.getElementById('moreMenu');
   m.style.display = m.style.display === 'none' ? 'block' : 'none';
+  if (m.style.display === 'block') syncTtsSpeedSlider();
 }
 function closeMore() {
   document.getElementById('moreMenu').style.display = 'none';
