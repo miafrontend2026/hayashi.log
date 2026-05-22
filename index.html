@@ -819,6 +819,11 @@ select::-ms-expand { display: none; }
   transition: opacity .2s var(--ease);
 }
 .qstart:hover { opacity: .9; }
+/* 我的 inline 頁面內的按鈕做小一點 — modal 全寬大 button 在 inline 看起來腫 */
+.st-section .qstart, .st-section .qclose {
+  padding: 9px 14px; font-size: 13px; border-radius: 8px;
+  margin-top: 8px;
+}
 .qclose {
   width: 100%; padding: 12px; background: none;
   border: 1px solid var(--bd); border-radius: 12px;
