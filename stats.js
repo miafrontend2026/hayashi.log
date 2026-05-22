@@ -215,22 +215,44 @@ const Stats = (() => {
     const max = Math.max(...pcts);
     const recent = pcts[pcts.length - 1];
 
-    // bar 高度 normalize：高分都擠在頂端看不出差異。以 min-5 為基準線、放大區間差異
+    // SVG 折線圖：對小範圍變化（85-100% 之間）視覺差異比 bar 清楚
     const minPct = Math.min(...pcts);
+    const maxPct = Math.max(...pcts);
     const baseline = Math.max(0, minPct - 5);
-    const range = Math.max(100 - baseline, 1);
-    let bars = '<div class="st-bars">';
-    pcts.forEach((p, i) => {
-      const item = last20[i];
-      const color = p >= 80 ? '#16a34a' : p >= 60 ? '#ca8a04' : '#dc2626';
-      const date = new Date(item.date).toLocaleDateString('zh-TW', {month:'numeric',day:'numeric'});
-      const visualH = Math.round((p - baseline) / range * 100);
-      bars += '<div class="st-bar-wrap" title="' + date + ' ' + item.level.toUpperCase() + ' ' + p + '%">' +
-        '<div class="st-bar" style="height:' + visualH + '%;background:' + color + '"></div>' +
-        '<div class="st-bar-lbl">' + p + '</div></div>';
+    const top = Math.min(100, maxPct + 2);
+    const range = Math.max(top - baseline, 1);
+    const W = 320, H = 100;
+    const n = pcts.length;
+    const xStep = n > 1 ? W / (n - 1) : 0;
+    const points = pcts.map((p, i) => {
+      const x = i * xStep;
+      const y = H - ((p - baseline) / range) * H;
+      return `${x.toFixed(1)},${y.toFixed(1)}`;
     });
-    bars += '</div>';
-    bars += `<div style="font-size:10px;color:var(--tx3);margin-top:4px;text-align:right">縱軸基準：${baseline}%（為了凸顯差異、不是 0）</div>`;
+    // gradient 顏色：last 點的顏色決定整條線色
+    const lastP = pcts[pcts.length - 1];
+    const lineColor = lastP >= 80 ? '#16a34a' : lastP >= 60 ? '#ca8a04' : '#dc2626';
+    const dots = pcts.map((p, i) => {
+      const x = i * xStep;
+      const y = H - ((p - baseline) / range) * H;
+      const color = p >= 80 ? '#16a34a' : p >= 60 ? '#ca8a04' : '#dc2626';
+      const item = last20[i];
+      const date = new Date(item.date).toLocaleDateString('zh-TW', {month:'numeric',day:'numeric'});
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5" fill="${color}"><title>${date} ${item.level.toUpperCase()} ${p}%</title></circle>`;
+    }).join('');
+    // 水平輔助線（baseline / mid / top）
+    const ymid = H / 2;
+    const bars = `
+      <svg viewBox="0 0 ${W} ${H + 20}" preserveAspectRatio="none" style="width:100%;height:120px;display:block">
+        <line x1="0" y1="0" x2="${W}" y2="0" stroke="var(--bd)" stroke-width="1" stroke-dasharray="2,3"/>
+        <line x1="0" y1="${ymid}" x2="${W}" y2="${ymid}" stroke="var(--bd)" stroke-width="1" stroke-dasharray="2,3"/>
+        <line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="var(--bd)" stroke-width="1"/>
+        <text x="${W-2}" y="10" fill="var(--tx3)" font-size="9" text-anchor="end">${top}%</text>
+        <text x="${W-2}" y="${ymid - 2}" fill="var(--tx3)" font-size="9" text-anchor="end">${Math.round((top+baseline)/2)}%</text>
+        <text x="${W-2}" y="${H + 12}" fill="var(--tx3)" font-size="9" text-anchor="end">${baseline}%</text>
+        <polyline points="${points.join(' ')}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linejoin="round"/>
+        ${dots}
+      </svg>`;
 
     return `<div class="st-section"><div class="st-title">${t('score_title')}</div>${bars}` +
       `<div class="st-row"><span>${t('score_recent', { n: recent })}</span><span>${t('score_avg', { n: avg })}</span><span>${t('score_high', { n: max })}</span><span>${t('score_total', { n: hist.length })}</span></div></div>`;
@@ -388,21 +410,34 @@ const Stats = (() => {
   // ── 設定 tab ──
   function buildSettings() {
     const curSpeed = (typeof getTtsSpeed === 'function' ? getTtsSpeed() : 1).toFixed(2).replace(/\.?0+$/, '');
-    return `<div class="st-section">
-      <div class="st-title">🔊 語速</div>
-      <div style="padding:8px 0">
-        <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">當前：<span id="ttsSpeedLabel">${curSpeed}x</span>（0.5~1.5x，下次播音生效）</div>
-        <input type="range" id="ttsSpeedSlider" min="0.5" max="1.5" step="0.05" value="${typeof getTtsSpeed==='function'?getTtsSpeed():1}" style="width:100%" oninput="setTtsSpeed(this.value)">
+    const speedVal = typeof getTtsSpeed === 'function' ? getTtsSpeed() : 1;
+    // 語速 marker：在 slider 下面標 0.5 / 1 / 1.5 三個錨點
+    return `
+      <div style="background:var(--bg2);border-radius:12px;padding:16px;margin-bottom:12px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">
+          <span style="font-size:16px">🔊</span>
+          <span style="font-weight:600;color:var(--tx)">語速</span>
+          <span style="margin-left:auto;font-variant-numeric:tabular-nums;color:var(--ac);font-weight:600" id="ttsSpeedLabel">${curSpeed}x</span>
+        </div>
+        <input type="range" id="ttsSpeedSlider" min="0.5" max="1.5" step="0.05" value="${speedVal}" style="width:100%;display:block" oninput="setTtsSpeed(this.value)">
+        <div style="display:flex;justify-content:space-between;font-size:10px;color:var(--tx3);margin-top:4px">
+          <span>0.5x 慢</span><span>1.0x 標準</span><span>1.5x 快</span>
+        </div>
       </div>
-    </div>
-    <div class="st-section">
-      <div class="st-title">📐 學習工具</div>
-      <a href="verbs.html" style="display:block;padding:10px 12px;background:var(--bg2);border-radius:8px;color:var(--tx);text-decoration:none;margin-bottom:8px">動詞變化規則表（五段 / 一段 / 不規則）→</a>
-    </div>
-    <div class="st-section">
-      <div class="st-title">💬 意見回饋</div>
-      <a href="contact.html" style="display:block;padding:10px 12px;background:var(--bg2);border-radius:8px;color:var(--tx);text-decoration:none">回報內容錯誤 / 提建議 →</a>
-    </div>`;
+      <a href="verbs.html" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg2);border-radius:12px;color:var(--tx);text-decoration:none;margin-bottom:12px;border:1px solid transparent" onmouseover="this.style.borderColor='var(--ac2)'" onmouseout="this.style.borderColor='transparent'">
+        <span style="font-size:20px">📐</span>
+        <div style="flex:1">
+          <div style="font-weight:600">動詞變化規則表</div>
+          <div style="font-size:12px;color:var(--tx2);margin-top:2px">五段 / 一段 / 不規則</div>
+        </div>
+      </a>
+      <a href="contact.html" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg2);border-radius:12px;color:var(--tx);text-decoration:none;border:1px solid transparent" onmouseover="this.style.borderColor='var(--ac)'" onmouseout="this.style.borderColor='transparent'">
+        <span style="font-size:20px">💬</span>
+        <div style="flex:1">
+          <div style="font-weight:600">意見回饋</div>
+          <div style="font-size:12px;color:var(--tx2);margin-top:2px">回報內容錯誤 / 提建議</div>
+        </div>
+      </a>`;
   }
 
   // ── 錯題回顧（聽力 / 閱讀 / 模考） ──
