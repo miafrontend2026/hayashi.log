@@ -6,3 +6,15 @@ firebase-debug.log
 firebase-debug.*.log
 
 *.bak
+
+# Service account / credentials — NEVER commit
+*service-account*.json
+*service_account*.json
+*sa-key*.json
+*sa_key*.json
+*credentials*.json
+jpnote-*-*.json
+gcp-sa-*.json
+.env
+.env.local
+.env.*.local
