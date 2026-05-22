@@ -424,13 +424,6 @@ const Stats = (() => {
           <span>0.5x 慢</span><span>1.0x 標準</span><span>1.5x 快</span>
         </div>
       </div>
-      <a href="verbs.html" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg2);border-radius:12px;color:var(--tx);text-decoration:none;margin-bottom:12px;border:1px solid transparent" onmouseover="this.style.borderColor='var(--ac2)'" onmouseout="this.style.borderColor='transparent'">
-        <span style="font-size:20px">📐</span>
-        <div style="flex:1">
-          <div style="font-weight:600">動詞變化規則表</div>
-          <div style="font-size:12px;color:var(--tx2);margin-top:2px">五段 / 一段 / 不規則</div>
-        </div>
-      </a>
       <a href="contact.html" style="display:flex;align-items:center;gap:12px;padding:14px 16px;background:var(--bg2);border-radius:12px;color:var(--tx);text-decoration:none;border:1px solid transparent" onmouseover="this.style.borderColor='var(--ac)'" onmouseout="this.style.borderColor='transparent'">
         <span style="font-size:20px">💬</span>
         <div style="flex:1">

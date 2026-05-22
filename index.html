@@ -1649,7 +1649,7 @@ function renderParticles() {
   let idx = 0;
   ['n5','n4','n3','n2','n1'].forEach(lv => {
     if (!byLv[lv].length) return;
-    h += `<section class="cs"><h2><span class="ci2">${lv.toUpperCase()}</span>${lv.toUpperCase()} 助詞<span style="font-size:12px;color:#999;font-weight:400;margin-left:auto">${byLv[lv].length} 條</span></h2>`;
+    h += `<section class="cs" id="pcat-${lv}"><h2><span class="ci2">${lv.toUpperCase()}</span>${lv.toUpperCase()} 助詞<span style="font-size:12px;color:#999;font-weight:400;margin-left:auto">${byLv[lv].length} 條</span></h2>`;
     byLv[lv].forEach(d => {
       idx++;
       const egHtml = (d.eg||[]).map(e => {
@@ -1662,7 +1662,19 @@ function renderParticles() {
   });
   if (!filtered.length) h += `<div class="nr"><p>沒有結果</p></div>`;
   mn.innerHTML = h;
-  if (sd) sd.innerHTML = '';
+  // 左側 sidebar：列各等級助詞快速跳轉（跟文法/單字模式一致）
+  if (sd) {
+    let sh = '';
+    ['n5','n4','n3','n2','n1'].forEach(lv => {
+      const arr = byLv[lv];
+      if (!arr.length) return;
+      sh += `<div class="ct" onclick="toggleCat(this)">${lv.toUpperCase()} (${arr.length})</div><div class="ci" style="max-height:${Math.min(arr.length*28,400)}px">`;
+      arr.slice(0,50).forEach(d => { sh += `<a href="#${d.id}" onclick="closeSdMobile()">${d.t}</a>`; });
+      if (arr.length > 50) sh += `<a href="#pcat-${lv}" style="color:var(--ac)" onclick="closeSdMobile()">查看全部 ${arr.length} 條</a>`;
+      sh += '</div>';
+    });
+    sd.innerHTML = sh;
+  }
   const stats = document.getElementById('stats');
   if (stats) stats.textContent = `助詞 ${filtered.length}`;
 }
