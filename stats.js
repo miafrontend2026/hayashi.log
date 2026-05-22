@@ -215,44 +215,50 @@ const Stats = (() => {
     const max = Math.max(...pcts);
     const recent = pcts[pcts.length - 1];
 
-    // SVG 折線圖：對小範圍變化（85-100% 之間）視覺差異比 bar 清楚
+    // SVG 折線圖 — 用 HTML 包 SVG，避免 viewBox 拉伸時字體變超大
     const minPct = Math.min(...pcts);
     const maxPct = Math.max(...pcts);
     const baseline = Math.max(0, minPct - 5);
     const top = Math.min(100, maxPct + 2);
     const range = Math.max(top - baseline, 1);
-    const W = 320, H = 100;
-    const n = pcts.length;
-    const xStep = n > 1 ? W / (n - 1) : 0;
-    const points = pcts.map((p, i) => {
-      const x = i * xStep;
-      const y = H - ((p - baseline) / range) * H;
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    });
-    // gradient 顏色：last 點的顏色決定整條線色
     const lastP = pcts[pcts.length - 1];
     const lineColor = lastP >= 80 ? '#16a34a' : lastP >= 60 ? '#ca8a04' : '#dc2626';
-    const dots = pcts.map((p, i) => {
+    // SVG line in non-uniform stretch space
+    const W = 100, H = 100;
+    const n = pcts.length;
+    const xStep = n > 1 ? W / (n - 1) : 0;
+    const pts = pcts.map((p, i) => {
       const x = i * xStep;
       const y = H - ((p - baseline) / range) * H;
-      const color = p >= 80 ? '#16a34a' : p >= 60 ? '#ca8a04' : '#dc2626';
-      const item = last20[i];
-      const date = new Date(item.date).toLocaleDateString('zh-TW', {month:'numeric',day:'numeric'});
-      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5" fill="${color}"><title>${date} ${item.level.toUpperCase()} ${p}%</title></circle>`;
+      return { x, y, p, item: last20[i] };
+    });
+    const pointsStr = pts.map(o => `${o.x.toFixed(2)},${o.y.toFixed(2)}`).join(' ');
+    // 面積填色路徑：折線 + 底部閉合
+    const areaPath = `M0,${H} L${pointsStr.split(' ').join(' L')} L${W},${H} Z`;
+    const dots = pts.map(o => {
+      const color = o.p >= 80 ? '#16a34a' : o.p >= 60 ? '#ca8a04' : '#dc2626';
+      const date = new Date(o.item.date).toLocaleDateString('zh-TW', {month:'numeric',day:'numeric'});
+      return `<circle cx="${o.x.toFixed(2)}" cy="${o.y.toFixed(2)}" r="1.6" fill="#fff" stroke="${color}" stroke-width="1.2" vector-effect="non-scaling-stroke"><title>${date} ${o.item.level.toUpperCase()} ${o.p}%</title></circle>`;
     }).join('');
-    // 水平輔助線（baseline / mid / top）
-    const ymid = H / 2;
     const bars = `
-      <svg viewBox="0 0 ${W} ${H + 20}" preserveAspectRatio="none" style="width:100%;height:120px;display:block">
-        <line x1="0" y1="0" x2="${W}" y2="0" stroke="var(--bd)" stroke-width="1" stroke-dasharray="2,3"/>
-        <line x1="0" y1="${ymid}" x2="${W}" y2="${ymid}" stroke="var(--bd)" stroke-width="1" stroke-dasharray="2,3"/>
-        <line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="var(--bd)" stroke-width="1"/>
-        <text x="${W-2}" y="10" fill="var(--tx3)" font-size="9" text-anchor="end">${top}%</text>
-        <text x="${W-2}" y="${ymid - 2}" fill="var(--tx3)" font-size="9" text-anchor="end">${Math.round((top+baseline)/2)}%</text>
-        <text x="${W-2}" y="${H + 12}" fill="var(--tx3)" font-size="9" text-anchor="end">${baseline}%</text>
-        <polyline points="${points.join(' ')}" fill="none" stroke="${lineColor}" stroke-width="2" stroke-linejoin="round"/>
-        ${dots}
-      </svg>`;
+      <div style="position:relative;height:130px;margin:8px 0 4px;padding-right:36px">
+        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible">
+          <defs><linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+          </linearGradient></defs>
+          <line x1="0" y1="0" x2="${W}" y2="0" stroke="var(--bd)" stroke-width="0.4" vector-effect="non-scaling-stroke"/>
+          <line x1="0" y1="${H/2}" x2="${W}" y2="${H/2}" stroke="var(--bd)" stroke-width="0.4" vector-effect="non-scaling-stroke"/>
+          <line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="var(--bd)" stroke-width="0.4" vector-effect="non-scaling-stroke"/>
+          <path d="${areaPath}" fill="url(#scoreGrad)"/>
+          <polyline points="${pointsStr}" fill="none" stroke="${lineColor}" stroke-width="1.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+          ${dots}
+        </svg>
+        <!-- Y 軸 label HTML 疊 — 不受 SVG 拉伸影響、字體大小可控 -->
+        <div style="position:absolute;right:0;top:-6px;font-size:11px;color:var(--tx3);line-height:1">${top}%</div>
+        <div style="position:absolute;right:0;top:calc(50% - 6px);font-size:11px;color:var(--tx3);line-height:1">${Math.round((top+baseline)/2)}%</div>
+        <div style="position:absolute;right:0;bottom:-6px;font-size:11px;color:var(--tx3);line-height:1">${baseline}%</div>
+      </div>`;
 
     return `<div class="st-section"><div class="st-title">${t('score_title')}</div>${bars}` +
       `<div class="st-row"><span>${t('score_recent', { n: recent })}</span><span>${t('score_avg', { n: avg })}</span><span>${t('score_high', { n: max })}</span><span>${t('score_total', { n: hist.length })}</span></div></div>`;
