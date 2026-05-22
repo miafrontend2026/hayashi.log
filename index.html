@@ -1155,7 +1155,6 @@ select::-ms-expand { display: none; }
   <div class="hd-bar" id="hdBar">
     <button class="mode-pill on" onclick="switchMode('grammar')" data-i18n="grammar">文法</button>
     <button class="mode-pill" onclick="switchMode('vocab')" data-i18n="vocab">單字</button>
-    <button class="mode-pill" onclick="switchMode('confuse')" data-i18n="compare">比較</button>
     <button class="mode-pill" onclick="switchMode('particle')" title="只看助詞">助詞</button>
     <div class="hd-sep"></div>
     <div id="tabsBar" style="display:contents"></div>
@@ -1174,6 +1173,7 @@ select::-ms-expand { display: none; }
 
 <!-- More menu (simple absolute popup, no drawer) -->
 <div id="moreMenu" style="display:none;position:fixed;bottom:60px;right:8px;background:var(--bg2);border:1px solid var(--bd);border-radius:14px;padding:8px;z-index:250;box-shadow:0 4px 20px rgba(0,0,0,.12);min-width:140px">
+  <button class="more-item" onclick="closeMore();switchMode('confuse')">🔀 易混淆詞比較</button>
   <button class="more-item" onclick="closeMore();FlashCard.start()">⚡ 快速背單字</button>
   <button class="more-item" onclick="closeMore();MockExam.start()" data-i18n="mock_exam">模擬考</button>
   <button class="more-item" onclick="closeMore();GrammarDrill.start()" data-i18n="grammar_drill">文法練習</button>
@@ -1554,7 +1554,7 @@ let searchTerm = '';
 // Restore saved mode/level UI on load
 (function initSavedState() {
   document.querySelectorAll('.mode-pill').forEach((b,i) => b.classList.toggle('on',
-    (i===0&&currentMode==='grammar')||(i===1&&currentMode==='vocab')||(i===2&&currentMode==='confuse')||(i===3&&currentMode==='particle')));
+    (i===0&&currentMode==='grammar')||(i===1&&currentMode==='vocab')||(i===2&&currentMode==='particle')));
   document.getElementById('modeTitle').textContent = currentMode==='grammar'?t('grammar'):currentMode==='vocab'?t('vocab'):currentMode==='confuse'?t('compare'):'助詞';
   updateTabs();
 })();
@@ -1565,7 +1565,8 @@ function switchMode(mode) {
   document.getElementById('favBtn').classList.remove('fav-on');
   document.getElementById('search').value = '';
   searchTerm = '';
-  document.querySelectorAll('.mode-pill').forEach((b,i) => b.classList.toggle('on', (i===0&&mode==='grammar')||(i===1&&mode==='vocab')||(i===2&&mode==='confuse')||(i===3&&mode==='particle')));
+  // 上方 pills 順序：文法(0) / 單字(1) / 助詞(2)。比較搬到「更多」選單、沒有 top pill
+  document.querySelectorAll('.mode-pill').forEach((b,i) => b.classList.toggle('on', (i===0&&mode==='grammar')||(i===1&&mode==='vocab')||(i===2&&mode==='particle')));
   document.getElementById('modeTitle').textContent = mode==='grammar'?t('grammar'):mode==='vocab'?t('vocab'):mode==='confuse'?t('compare'):'助詞';
   updateTabs();
   currentLevel = mode==='confuse'?'all':'n5';
