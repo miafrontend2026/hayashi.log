@@ -235,26 +235,28 @@ const Stats = (() => {
     const pointsStr = pts.map(o => `${o.x.toFixed(2)},${o.y.toFixed(2)}`).join(' ');
     // 面積填色路徑：折線 + 底部閉合
     const areaPath = `M0,${H} L${pointsStr.split(' ').join(' L')} L${W},${H} Z`;
-    const dots = pts.map(o => {
+    // SVG 只畫線跟面積。圓點改用 HTML div 絕對定位、避免 SVG 拉伸變橢圓
+    const dotsHtml = pts.map(o => {
       const color = o.p >= 80 ? '#16a34a' : o.p >= 60 ? '#ca8a04' : '#dc2626';
       const date = new Date(o.item.date).toLocaleDateString('zh-TW', {month:'numeric',day:'numeric'});
-      return `<circle cx="${o.x.toFixed(2)}" cy="${o.y.toFixed(2)}" r="1.6" fill="#fff" stroke="${color}" stroke-width="1.2" vector-effect="non-scaling-stroke"><title>${date} ${o.item.level.toUpperCase()} ${o.p}%</title></circle>`;
+      return `<div style="position:absolute;left:${o.x}%;top:${o.y}%;width:8px;height:8px;margin:-4px 0 0 -4px;border-radius:50%;background:#fff;border:1.5px solid ${color};box-sizing:border-box" title="${date} ${o.item.level.toUpperCase()} ${o.p}%"></div>`;
     }).join('');
     const bars = `
       <div style="position:relative;height:130px;margin:8px 0 4px;padding-right:36px">
-        <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:100%;display:block;overflow:visible">
-          <defs><linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
-            <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
-          </linearGradient></defs>
-          <line x1="0" y1="0" x2="${W}" y2="0" stroke="var(--bd)" stroke-width="0.4" vector-effect="non-scaling-stroke"/>
-          <line x1="0" y1="${H/2}" x2="${W}" y2="${H/2}" stroke="var(--bd)" stroke-width="0.4" vector-effect="non-scaling-stroke"/>
-          <line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="var(--bd)" stroke-width="0.4" vector-effect="non-scaling-stroke"/>
-          <path d="${areaPath}" fill="url(#scoreGrad)"/>
-          <polyline points="${pointsStr}" fill="none" stroke="${lineColor}" stroke-width="1.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
-          ${dots}
-        </svg>
-        <!-- Y 軸 label HTML 疊 — 不受 SVG 拉伸影響、字體大小可控 -->
+        <div style="position:absolute;left:0;right:36px;top:0;bottom:0">
+          <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:100%;display:block">
+            <defs><linearGradient id="scoreGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
+              <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+            </linearGradient></defs>
+            <line x1="0" y1="0" x2="${W}" y2="0" stroke="var(--bd)" stroke-width="0.4" vector-effect="non-scaling-stroke"/>
+            <line x1="0" y1="${H/2}" x2="${W}" y2="${H/2}" stroke="var(--bd)" stroke-width="0.4" vector-effect="non-scaling-stroke"/>
+            <line x1="0" y1="${H}" x2="${W}" y2="${H}" stroke="var(--bd)" stroke-width="0.4" vector-effect="non-scaling-stroke"/>
+            <path d="${areaPath}" fill="url(#scoreGrad)"/>
+            <polyline points="${pointsStr}" fill="none" stroke="${lineColor}" stroke-width="1.4" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>
+          </svg>
+          ${dotsHtml}
+        </div>
         <div style="position:absolute;right:0;top:-6px;font-size:11px;color:var(--tx3);line-height:1">${top}%</div>
         <div style="position:absolute;right:0;top:calc(50% - 6px);font-size:11px;color:var(--tx3);line-height:1">${Math.round((top+baseline)/2)}%</div>
         <div style="position:absolute;right:0;bottom:-6px;font-size:11px;color:var(--tx3);line-height:1">${baseline}%</div>
@@ -286,9 +288,9 @@ const Stats = (() => {
         '<div class="st-prog-bar"><div class="st-prog-fill st-prog-mastered" style="width:' + masteredPct + '%"></div>' +
         '<div class="st-prog-fill st-prog-learning" style="width:' + (pct - masteredPct) + '%"></div></div>' +
         '<div class="st-prog-legend">' +
-        `<span class="st-dot st-dot-mastered"></span>${t('mastered', { n: mastered })}` +
-        `<span class="st-dot st-dot-learning"></span>${t('learning', { n: learning })}` +
-        `<span class="st-dot st-dot-new"></span>${t('unlearned', { n: total - learned })}` +
+        `<span class="st-leg"><span class="st-dot st-dot-mastered"></span>${t('mastered', { n: mastered })}</span>` +
+        `<span class="st-leg"><span class="st-dot st-dot-learning"></span>${t('learning', { n: learning })}</span>` +
+        `<span class="st-leg"><span class="st-dot st-dot-new"></span>${t('unlearned', { n: total - learned })}</span>` +
         '</div></div>';
     });
 

@@ -7,6 +7,9 @@ firebase-debug.*.log
 
 *.bak
 
+# Local cache for downloaded reference data (JMdict etc.)
+scripts/.cache/
+
 # Service account / credentials — NEVER commit
 *service-account*.json
 *service_account*.json
