@@ -26,6 +26,7 @@ const Stats = (() => {
     const wqCnt = getWrongQuestions().length;
     h += `<button class="qo-btn stat-tab" data-tab="wrongq" onclick="Stats.switchTab('wrongq')">錯題回顧${wqCnt?` (${wqCnt})`:''}</button>`;
     h += `<button class="qo-btn stat-tab" data-tab="weak" onclick="Stats.switchTab('weak')">${t('tab_weak')}</button>`;
+    h += `<button class="qo-btn stat-tab" data-tab="settings" onclick="Stats.switchTab('settings')">設定</button>`;
     h += '</div>';
     h += '<div id="statContent">';
     h += buildOverview();
@@ -43,6 +44,7 @@ const Stats = (() => {
     else if (tab === 'notebook') c.innerHTML = buildNotebook();
     else if (tab === 'wrongq') c.innerHTML = buildWrongQuestions();
     else if (tab === 'weak') c.innerHTML = buildWeakWords();
+    else if (tab === 'settings') c.innerHTML = buildSettings();
   }
 
   function buildOverview() {
@@ -358,6 +360,26 @@ const Stats = (() => {
         _renderWQ();
       }
     }, correct ? 500 : 1000);
+  }
+
+  // ── 設定 tab ──
+  function buildSettings() {
+    const curSpeed = (typeof getTtsSpeed === 'function' ? getTtsSpeed() : 1).toFixed(2).replace(/\.?0+$/, '');
+    return `<div class="st-section">
+      <div class="st-title">🔊 語速</div>
+      <div style="padding:8px 0">
+        <div style="font-size:12px;color:var(--tx2);margin-bottom:6px">當前：<span id="ttsSpeedLabel">${curSpeed}x</span>（0.5~1.5x，下次播音生效）</div>
+        <input type="range" id="ttsSpeedSlider" min="0.5" max="1.5" step="0.05" value="${typeof getTtsSpeed==='function'?getTtsSpeed():1}" style="width:100%" oninput="setTtsSpeed(this.value)">
+      </div>
+    </div>
+    <div class="st-section">
+      <div class="st-title">📐 學習工具</div>
+      <a href="verbs.html" style="display:block;padding:10px 12px;background:var(--bg2);border-radius:8px;color:var(--tx);text-decoration:none;margin-bottom:8px">動詞變化規則表（五段 / 一段 / 不規則）→</a>
+    </div>
+    <div class="st-section">
+      <div class="st-title">💬 意見回饋</div>
+      <a href="contact.html" style="display:block;padding:10px 12px;background:var(--bg2);border-radius:8px;color:var(--tx);text-decoration:none">回報內容錯誤 / 提建議 →</a>
+    </div>`;
   }
 
   // ── 錯題回顧（聽力 / 閱讀 / 模考） ──
