@@ -30,18 +30,17 @@ const Stats = (() => {
 
   function buildHTML(showCloseBtn) {
     const closeBtn = showCloseBtn ? `<button class="qclose" style="width:auto;margin:0;padding:2px 10px" onclick="Stats.close()">✕</button>` : '';
-    let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="margin:0">${t('stats_title')}</h3>${closeBtn}</div>`;
-    h += '<div style="display:flex;gap:4px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none">';
-    h += `<button class="qo-btn stat-tab on" data-tab="overview" onclick="Stats.switchTab('overview')">${t('tab_overview')}</button>`;
-    h += `<button class="qo-btn stat-tab" data-tab="history" onclick="Stats.switchTab('history')">${t('tab_history')}</button>`;
-    h += `<button class="qo-btn stat-tab" data-tab="notebook" onclick="Stats.switchTab('notebook')">${t('tab_notebook')}</button>`;
+    let h = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><h3 style="margin:0">${showCloseBtn ? t('stats_title') : '我的'}</h3>${closeBtn}</div>`;
+    // 3 個 sub-tab：學習統計（總覽+考試紀錄）/ 我的詞庫（生詞本+不熟+錯題）/ 設定
     const wqCnt = getWrongQuestions().length;
-    h += `<button class="qo-btn stat-tab" data-tab="wrongq" onclick="Stats.switchTab('wrongq')">錯題回顧${wqCnt?` (${wqCnt})`:''}</button>`;
-    h += `<button class="qo-btn stat-tab" data-tab="weak" onclick="Stats.switchTab('weak')">${t('tab_weak')}</button>`;
-    h += `<button class="qo-btn stat-tab" data-tab="settings" onclick="Stats.switchTab('settings')">設定</button>`;
+    const nbCnt = getNotebook().length;
+    h += '<div style="display:flex;gap:4px;margin-bottom:14px;overflow-x:auto;scrollbar-width:none">';
+    h += `<button class="qo-btn stat-tab on" data-tab="stats" onclick="Stats.switchTab('stats')">📊 學習統計</button>`;
+    h += `<button class="qo-btn stat-tab" data-tab="collection" onclick="Stats.switchTab('collection')">📚 我的詞庫${nbCnt+wqCnt?` (${nbCnt+wqCnt})`:''}</button>`;
+    h += `<button class="qo-btn stat-tab" data-tab="settings" onclick="Stats.switchTab('settings')">⚙️ 設定</button>`;
     h += '</div>';
     h += '<div id="statContent">';
-    h += buildOverview();
+    h += buildStatsCombined();
     h += '</div>';
     return h;
   }
@@ -51,12 +50,18 @@ const Stats = (() => {
       b.classList.toggle('on', b.dataset.tab === tab);
     });
     const c = document.getElementById('statContent');
-    if (tab === 'overview') c.innerHTML = buildOverview();
-    else if (tab === 'history') c.innerHTML = buildHistory();
-    else if (tab === 'notebook') c.innerHTML = buildNotebook();
-    else if (tab === 'wrongq') c.innerHTML = buildWrongQuestions();
-    else if (tab === 'weak') c.innerHTML = buildWeakWords();
+    if (tab === 'stats') c.innerHTML = buildStatsCombined();
+    else if (tab === 'collection') c.innerHTML = buildCollectionCombined();
     else if (tab === 'settings') c.innerHTML = buildSettings();
+  }
+
+  // 學習統計 = 總覽（成績圖 + 學習進度） + 考試紀錄
+  function buildStatsCombined() {
+    return buildScoreChart() + buildProgress() + buildHistory();
+  }
+  // 我的詞庫 = 生詞本 + 不熟單字 + 錯題回顧
+  function buildCollectionCombined() {
+    return buildNotebook() + buildWeakWords() + buildWrongQuestions();
   }
 
   function buildOverview() {
@@ -210,16 +215,22 @@ const Stats = (() => {
     const max = Math.max(...pcts);
     const recent = pcts[pcts.length - 1];
 
+    // bar 高度 normalize：高分都擠在頂端看不出差異。以 min-5 為基準線、放大區間差異
+    const minPct = Math.min(...pcts);
+    const baseline = Math.max(0, minPct - 5);
+    const range = Math.max(100 - baseline, 1);
     let bars = '<div class="st-bars">';
     pcts.forEach((p, i) => {
       const item = last20[i];
       const color = p >= 80 ? '#16a34a' : p >= 60 ? '#ca8a04' : '#dc2626';
       const date = new Date(item.date).toLocaleDateString('zh-TW', {month:'numeric',day:'numeric'});
+      const visualH = Math.round((p - baseline) / range * 100);
       bars += '<div class="st-bar-wrap" title="' + date + ' ' + item.level.toUpperCase() + ' ' + p + '%">' +
-        '<div class="st-bar" style="height:' + p + '%;background:' + color + '"></div>' +
+        '<div class="st-bar" style="height:' + visualH + '%;background:' + color + '"></div>' +
         '<div class="st-bar-lbl">' + p + '</div></div>';
     });
     bars += '</div>';
+    bars += `<div style="font-size:10px;color:var(--tx3);margin-top:4px;text-align:right">縱軸基準：${baseline}%（為了凸顯差異、不是 0）</div>`;
 
     return `<div class="st-section"><div class="st-title">${t('score_title')}</div>${bars}` +
       `<div class="st-row"><span>${t('score_recent', { n: recent })}</span><span>${t('score_avg', { n: avg })}</span><span>${t('score_high', { n: max })}</span><span>${t('score_total', { n: hist.length })}</span></div></div>`;
