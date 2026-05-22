@@ -1168,7 +1168,6 @@ select::-ms-expand { display: none; }
   <div class="hd-bar" id="hdBar">
     <button class="mode-pill on" onclick="switchMode('grammar')" data-i18n="grammar">文法</button>
     <button class="mode-pill" onclick="switchMode('vocab')" data-i18n="vocab">單字</button>
-    <button class="mode-pill" onclick="switchMode('particle')" title="只看助詞">助詞</button>
     <div class="hd-sep"></div>
     <div id="tabsBar" style="display:contents"></div>
     <div class="hd-sep"></div>
@@ -1561,7 +1560,7 @@ function updateFavCount() {
 // ========== STATE ==========
 const _savedMode = localStorage.getItem('lastMode');
 const _savedLevel = localStorage.getItem('lastLevel');
-let currentMode = (_savedMode === 'vocab' || _savedMode === 'confuse' || _savedMode === 'particle') ? _savedMode : 'grammar';
+let currentMode = (_savedMode === 'vocab' || _savedMode === 'confuse') ? _savedMode : 'grammar';
 let currentLevel = ['n5','n4','n3','n2','n1','all'].includes(_savedLevel) ? _savedLevel : 'n5';
 let showFavOnly = false;
 let searchTerm = '';
@@ -1569,8 +1568,8 @@ let searchTerm = '';
 // Restore saved mode/level UI on load
 (function initSavedState() {
   document.querySelectorAll('.mode-pill').forEach((b,i) => b.classList.toggle('on',
-    (i===0&&currentMode==='grammar')||(i===1&&currentMode==='vocab')||(i===2&&currentMode==='particle')));
-  document.getElementById('modeTitle').textContent = currentMode==='grammar'?t('grammar'):currentMode==='vocab'?t('vocab'):currentMode==='confuse'?t('compare'):'助詞';
+    (i===0&&currentMode==='grammar')||(i===1&&currentMode==='vocab')));
+  document.getElementById('modeTitle').textContent = currentMode==='grammar'?t('grammar'):currentMode==='vocab'?t('vocab'):currentMode==='confuse'?t('compare'):'';
   updateTabs();
 })();
 
@@ -1580,9 +1579,9 @@ function switchMode(mode) {
   document.getElementById('favBtn').classList.remove('fav-on');
   document.getElementById('search').value = '';
   searchTerm = '';
-  // 上方 pills 順序：文法(0) / 單字(1) / 助詞(2)。比較搬到「更多」選單、沒有 top pill
-  document.querySelectorAll('.mode-pill').forEach((b,i) => b.classList.toggle('on', (i===0&&mode==='grammar')||(i===1&&mode==='vocab')||(i===2&&mode==='particle')));
-  document.getElementById('modeTitle').textContent = mode==='grammar'?t('grammar'):mode==='vocab'?t('vocab'):mode==='confuse'?t('compare'):'助詞';
+  // 上方 pills 順序：文法(0) / 單字(1)。比較搬到「更多」選單
+  document.querySelectorAll('.mode-pill').forEach((b,i) => b.classList.toggle('on', (i===0&&mode==='grammar')||(i===1&&mode==='vocab')));
+  document.getElementById('modeTitle').textContent = mode==='grammar'?t('grammar'):mode==='vocab'?t('vocab'):mode==='confuse'?t('compare'):'';
   updateTabs();
   currentLevel = mode==='confuse'?'all':'n5';
   localStorage.setItem('lastMode', currentMode);
@@ -1591,11 +1590,6 @@ function switchMode(mode) {
 }
 function updateTabs() {
   const bar = document.getElementById('tabsBar');
-  if (currentMode === 'particle') {
-    // 助詞跨等級，不顯示等級切換
-    bar.innerHTML = '';
-    return;
-  }
   if (currentMode === 'confuse') {
     const cls = ['all','n3','n2'];
     bar.innerHTML = cls.map(l => `<button class="tab-pill ${currentLevel===l?'on':''}" onclick="switchLevel('${l}')">${l==='all'?'全部':l.toUpperCase()}</button>`).join('');
@@ -1626,72 +1620,9 @@ let st; function onSearch(v) { clearTimeout(st); st = setTimeout(() => { searchT
 function doRender() {
   if (currentMode==='vocab') renderVocab();
   else if (currentMode==='confuse') renderConfuse();
-  else if (currentMode==='particle') renderParticles();
   else render();
   if (typeof Calendar !== 'undefined') Calendar.renderPanel();
 }
-// 助詞 mode 渲染：跨 N5~N1，按 level 分組
-function renderParticles() {
-  const items = getAllParticles();
-  const mn = document.getElementById('mn');
-  const sd = document.getElementById('sd');
-  const lf = searchTerm;
-  let filtered = items;
-  if (lf) filtered = items.filter(d => (d.t||'').toLowerCase().includes(lf) || (d.ex||'').toLowerCase().includes(lf));
-
-  const byLv = { n5: [], n4: [], n3: [], n2: [], n1: [] };
-  filtered.forEach(d => { if (byLv[d._level]) byLv[d._level].push(d); });
-
-  let h = '';
-  if (!lf) {
-    h += `<div class="intro"><h2>助詞 / 助詞性文法</h2><p>跨 N5~N1 整理出助詞分類與「～&lt;助詞&gt;」開頭的接續模式，方便速查。</p><div class="tg"><span>共 ${filtered.length} 條</span></div></div>`;
-  }
-  let idx = 0;
-  ['n5','n4','n3','n2','n1'].forEach(lv => {
-    if (!byLv[lv].length) return;
-    h += `<section class="cs" id="pcat-${lv}"><h2><span class="ci2">${lv.toUpperCase()}</span>${lv.toUpperCase()} 助詞<span style="font-size:12px;color:#999;font-weight:400;margin-left:auto">${byLv[lv].length} 條</span></h2>`;
-    byLv[lv].forEach(d => {
-      idx++;
-      const egHtml = (d.eg||[]).map(e => {
-        const pureJ = (e.j||'').replace(/<[^>]+>/g,'').replace(/'/g,"\\'");
-        return `<div class="ex"><div class="j">${e.j}<svg class="ex-spk" onclick="event.stopPropagation();speak('${pureJ}')" viewBox="0 0 24 24"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 010 7.07M19.07 4.93a10 10 0 010 14.14"/></svg></div><div class="z">${cvt(e.z||'')}</div></div>`;
-      }).join('');
-      h += `<div class="gc" id="${d.id}"><div class="gh" onclick="toggleCard(this)"><span class="gn">${idx}</span><span class="gt">${d.t}</span><svg class="arr" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div><div class="gb"><div class="gx"><div class="pt">${d.p||''}</div><div class="ep">${cvt(d.ex||'')}</div><div class="eg">${egHtml}</div></div></div></div>`;
-    });
-    h += '</section>';
-  });
-  if (!filtered.length) h += `<div class="nr"><p>沒有結果</p></div>`;
-  mn.innerHTML = h;
-  // 左側 sidebar：列各等級助詞快速跳轉（跟文法/單字模式一致）
-  if (sd) {
-    let sh = '';
-    ['n5','n4','n3','n2','n1'].forEach(lv => {
-      const arr = byLv[lv];
-      if (!arr.length) return;
-      sh += `<div class="ct" onclick="toggleCat(this)">${lv.toUpperCase()} (${arr.length})</div><div class="ci" style="max-height:${Math.min(arr.length*28,400)}px">`;
-      arr.slice(0,50).forEach(d => { sh += `<a href="#${d.id}" onclick="closeSdMobile()">${d.t}</a>`; });
-      if (arr.length > 50) sh += `<a href="#pcat-${lv}" style="color:var(--ac)" onclick="closeSdMobile()">查看全部 ${arr.length} 條</a>`;
-      sh += '</div>';
-    });
-    sd.innerHTML = sh;
-  }
-  const stats = document.getElementById('stats');
-  if (stats) stats.textContent = `助詞 ${filtered.length}`;
-}
-
-// 助詞：跨 N5~N1 撈所有 cat='助詞' 或 title 為「～<助詞>」開頭的條目
-function getAllParticles() {
-  const out = [];
-  const re = /^～?(に|を|が|は|の|で|と|も|から|まで|より|へ|や|か)\b/;
-  ['n5','n4','n3','n2','n1'].forEach(lv => {
-    const arr = (lv==='n5'?(typeof N5!=='undefined'?N5:[]):(lv==='n4'?(typeof N4!=='undefined'?N4:[]):(lv==='n3'?(typeof N3!=='undefined'?N3:[]):(lv==='n2'?(typeof N2!=='undefined'?N2:[]):(typeof N1!=='undefined'?N1:[])))));
-    arr.forEach(it => {
-      if (it.cat === '助詞' || re.test(it.t)) out.push({ ...it, _level: lv });
-    });
-  });
-  return out;
-}
-
 // ========== TTS ==========
 // Strategy: every spoken Japanese string has been pre-rendered with VOICEVOX
 // (四国めたん) and is keyed in window.__TTS by exact text -> hash. speak() prefers
@@ -2881,6 +2812,7 @@ function render() {
       <button class="daily-btn ${grammarDailyMode?'on':''}" onclick="toggleGrammarDailyMode()">${grammarDailyMode?t('show_all'):t('daily_mode')}</button>
       <button class="shadow-trigger" onclick="Shadow.startCurrent()">🎧 跟讀本頁</button>
       <button class="weak-launcher" onclick="WeakGrammar.startQuiz()" style="display:${WeakGrammar.count()>0?'':'none'}">📝 不熟複習 (${WeakGrammar.count()})</button>
+      ${currentLevel === 'n5' ? `<button class="shadow-trigger" style="background:var(--ac2);color:#fff" onclick="document.getElementById('cat-助詞')?.classList.add('o');document.getElementById('cat-助詞')?.scrollIntoView({behavior:'smooth',block:'start'})">📃 跳到助詞</button>` : ''}
       ${grammarDailyMode?`<div class="daily-batch-row">
         ${gProg.totalOffset>0?`<button class="daily-btn" onclick="prevGrammarBatch()">${t('prev_batch')}</button>`:''}
         ${gProg.totalOffset<cnt?`<button class="daily-btn" onclick="nextGrammarBatch()">${t('next_batch')}</button>`:''}
