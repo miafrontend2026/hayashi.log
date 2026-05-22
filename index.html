@@ -2434,6 +2434,20 @@ function toggleGrammarDailyMode() {
   grammarDailyMode = !grammarDailyMode;
   doRender();
 }
+// 跳到助詞 cat-助詞 section；若在 daily mode 先離開（不然 section 不在 DOM 裡）
+function jumpToParticles() {
+  if (grammarDailyMode) {
+    grammarDailyMode = false;
+    doRender();
+  }
+  setTimeout(() => {
+    const el = document.getElementById('cat-助詞');
+    if (el) {
+      el.classList.add('o');
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, 50);
+}
 function nextGrammarBatch() {
   const lv = currentLevel;
   const gd = getGrammarData(lv);
@@ -2812,7 +2826,7 @@ function render() {
       <button class="daily-btn ${grammarDailyMode?'on':''}" onclick="toggleGrammarDailyMode()">${grammarDailyMode?t('show_all'):t('daily_mode')}</button>
       <button class="shadow-trigger" onclick="Shadow.startCurrent()">🎧 跟讀本頁</button>
       <button class="weak-launcher" onclick="WeakGrammar.startQuiz()" style="display:${WeakGrammar.count()>0?'':'none'}">📝 不熟複習 (${WeakGrammar.count()})</button>
-      ${currentLevel === 'n5' ? `<button class="shadow-trigger" style="background:var(--ac2);color:#fff" onclick="document.getElementById('cat-助詞')?.classList.add('o');document.getElementById('cat-助詞')?.scrollIntoView({behavior:'smooth',block:'start'})">📃 跳到助詞</button>` : ''}
+      ${currentLevel === 'n5' ? `<button class="shadow-trigger" style="background:var(--ac2);color:#fff" onclick="jumpToParticles()">📃 跳到助詞</button>` : ''}
       ${grammarDailyMode?`<div class="daily-batch-row">
         ${gProg.totalOffset>0?`<button class="daily-btn" onclick="prevGrammarBatch()">${t('prev_batch')}</button>`:''}
         ${gProg.totalOffset<cnt?`<button class="daily-btn" onclick="nextGrammarBatch()">${t('next_batch')}</button>`:''}
