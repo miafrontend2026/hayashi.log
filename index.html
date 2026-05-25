@@ -2486,6 +2486,7 @@ function renderVocab() {
       <div class="dp-txt">${t('progress_txt', { n: prog.totalOffset, total: cnt })}</div></div>
       <button class="daily-btn ${dailyMode?'on':''}" onclick="toggleDailyMode()">${dailyMode?t('show_all'):t('daily_mode')}</button>
       <button class="shadow-trigger" onclick="Shadow.startCurrent()">🎧 跟讀本頁</button>
+      ${dailyMode?`<button class="daily-btn" onclick="FlashCard.beginToday()">⚡ 快速背本批</button>`:''}
       ${dailyMode?`<div class="daily-batch-row">
         ${prog.totalOffset>0?`<button class="daily-btn" onclick="prevDailyBatch()">${t('prev_batch')}</button>`:''}
         ${prog.totalOffset<cnt?`<button class="daily-btn" onclick="nextDailyBatch()">${t('next_batch')}</button>`:''}

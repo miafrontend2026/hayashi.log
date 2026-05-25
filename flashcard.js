@@ -484,5 +484,28 @@ const FlashCard = (() => {
     document.getElementById('quizBg').classList.remove('show');
   }
 
-  return { start, begin, flip, answer, close, getExamDate, setExamDate, daysUntilExam };
+  // 快速背「今日批次」：吃 index.html 的 dailyMode 當前批次 (currentLevel + DAILY_NEW + getDailyProgress)
+  function beginToday() {
+    ensureStyles();
+    const lv = typeof currentLevel !== 'undefined' ? currentLevel : 'n5';
+    const data = getData(lv);
+    if (!data || !data.length) { alert('此級別無單字資料'); return; }
+    if (typeof getDailyProgress !== 'function' || typeof DAILY_NEW === 'undefined') {
+      alert('今日批次功能未就緒'); return;
+    }
+    const prog = getDailyProgress(lv);
+    const start = prog.totalOffset || 0;
+    const end = Math.min(start + DAILY_NEW, data.length);
+    const batch = data.slice(start, end);
+    if (!batch.length) { alert('今日批次無單字'); return; }
+    level = lv;
+    queue = [...batch].sort(() => Math.random() - 0.5);
+    cur = 0;
+    score = { known: 0, soso: 0, unknown: 0 };
+    reappearCount = {};
+    document.getElementById('quizBg').classList.add('show');
+    renderCard();
+  }
+
+  return { start, begin, beginToday, flip, answer, close, getExamDate, setExamDate, daysUntilExam };
 })();
