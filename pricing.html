@@ -39,13 +39,16 @@ a:hover{text-decoration:underline}
 .main strong{color:var(--tx);font-weight:700}
 
 /* Plan cards */
-.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin:32px 0}
-@media (max-width:760px){.plans{grid-template-columns:1fr}}
-.plan{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:24px;display:flex;flex-direction:column}
+.plans{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:32px 0}
+@media (max-width:1100px){.plans{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.plans{grid-template-columns:1fr}}
+.plan{background:var(--bg2);border:1px solid var(--bd);border-radius:16px;padding:22px;display:flex;flex-direction:column}
 .plan.featured{border:2px solid var(--ac);position:relative}
-.plan.featured::before{content:"推薦";position:absolute;top:-12px;right:20px;background:var(--ac);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px}
+.plan.featured::before{content:"推薦";position:absolute;top:-12px;right:16px;background:var(--ac);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px}
 .plan.best{border:2px solid #D946EF;position:relative}
-.plan.best::before{content:"🏆 最佳優惠";position:absolute;top:-12px;right:20px;background:#D946EF;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px}
+.plan.best::before{content:"🐦 限前 100 名";position:absolute;top:-12px;right:16px;background:#D946EF;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px}
+.plan.lifetime{border:2px solid #F59E0B;position:relative}
+.plan.lifetime::before{content:"🏆 一次解決";position:absolute;top:-12px;right:16px;background:#F59E0B;color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:999px}
 .save-badge{display:inline-block;background:#EF4444;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-left:6px;vertical-align:middle}
 .trial-badge{display:inline-block;background:rgba(74,127,212,.12);color:var(--ac2);font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-left:6px;vertical-align:middle}
 .plan-name{font-size:18px;font-weight:700;color:var(--tx);margin-bottom:4px}
@@ -102,22 +105,18 @@ a:hover{text-decoration:underline}
     <span style="font-size:13px;color:var(--tx2)">先用免費版體驗，喜歡再升級。不會藏內容、不會跳廣告打你臉。</span>
   </div>
 
-  <!-- === 三付費方案 === -->
+  <!-- === 四付費方案 === -->
   <div class="plans">
 
-    <div class="plan best">
-      <div class="plan-name">🐦 早期鳥年費</div>
-      <div class="plan-tag">限前 100 訂戶 · <strong style="color:#D946EF">終身鎖價 forever</strong></div>
-      <div class="plan-price"><span class="currency">NT$</span>990<span class="unit">/ 年</span></div>
-      <div class="plan-cycle">等於每月 NT$82 · 續訂永遠這個價</div>
+    <div class="plan">
+      <div class="plan-name">月費訂閱</div>
+      <div class="plan-tag">先試一個月再說</div>
+      <div class="plan-price"><span class="currency">NT$</span>149<span class="unit">/ 月</span></div>
+      <div class="plan-cycle">自動續扣 · 隨時可取消</div>
       <ul class="plan-features">
-        <li>無限次 SRS 快速背單字</li>
-        <li>無限次跟讀練習（含進階語速）</li>
-        <li>無限次動詞變化練習</li>
-        <li>完整模擬考 + 詳解 + 錯題回顧</li>
-        <li>跨裝置雲端同步</li>
-        <li>自訂提醒時段 / 進階主題色</li>
-        <li><strong>早鳥獨享：終身鎖 NT$990，新訂戶就漲到 NT$1,490</strong></li>
+        <li>適合短期衝刺（考前 1-2 個月）</li>
+        <li>隨時可改成年費鎖長期優惠</li>
+        <li>所有 Premium 功能</li>
       </ul>
       <a class="plan-cta" href="contact.html">即將開放</a>
     </div>
@@ -128,24 +127,39 @@ a:hover{text-decoration:underline}
       <div class="plan-price"><span class="currency">NT$</span>1,490<span class="unit">/ 年</span></div>
       <div class="plan-cycle">平均 NT$124 / 月 · 自動續扣</div>
       <ul class="plan-features">
-        <li>早期鳥方案的所有功能</li>
+        <li>JLPT 備考週期完整覆蓋</li>
         <li>跨裝置雲端同步</li>
-        <li>適合穩定備考的長期使用者</li>
         <li>一次付清 12 個月，省心</li>
         <li>隨時可取消，到期後不續扣</li>
       </ul>
       <a class="plan-cta" href="contact.html">即將開放</a>
     </div>
 
-    <div class="plan">
-      <div class="plan-name">月費訂閱</div>
-      <div class="plan-tag">先試一個月再說</div>
-      <div class="plan-price"><span class="currency">NT$</span>149<span class="unit">/ 月</span></div>
-      <div class="plan-cycle">自動續扣 · 隨時可取消</div>
+    <div class="plan best">
+      <div class="plan-name">🐦 早期鳥年費</div>
+      <div class="plan-tag">限前 100 訂戶 · <strong style="color:#D946EF">終身鎖價 forever</strong></div>
+      <div class="plan-price"><span class="currency">NT$</span>990<span class="unit">/ 年</span></div>
+      <div class="plan-cycle">等於每月 NT$82 · 續訂永遠這個價</div>
       <ul class="plan-features">
-        <li>年費版的所有功能</li>
-        <li>適合短期衝刺、或試用 1～2 個月</li>
-        <li>隨時可改成年費鎖長期優惠</li>
+        <li>跟年費同所有功能</li>
+        <li><strong>終身鎖 NT$990，新訂戶漲到 NT$1,490</strong></li>
+        <li>適合認同產品想長期支持的鐵粉</li>
+        <li>名額用完就沒了</li>
+      </ul>
+      <a class="plan-cta" href="contact.html">即將開放</a>
+    </div>
+
+    <div class="plan lifetime">
+      <div class="plan-name">終身方案</div>
+      <div class="plan-tag">一次付清 · 永不續扣 · 永久解鎖</div>
+      <div class="plan-price"><span class="currency">NT$</span>2,990</div>
+      <div class="plan-cycle">等於 2 年年費，之後免費用</div>
+      <ul class="plan-features">
+        <li>跟年費同所有功能，但永久</li>
+        <li>不再扣款、不會被漲價</li>
+        <li>適合準備跨多年級 N5 → N1 的長期學習者</li>
+        <li>跨裝置雲端同步</li>
+        <li><strong>限定範圍：JLPT N5-N1 全部內容 + 現有工具</strong></li>
       </ul>
       <a class="plan-cta" href="contact.html">即將開放</a>
     </div>
