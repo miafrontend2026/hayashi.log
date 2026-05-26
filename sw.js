@@ -1,4 +1,4 @@
-const CACHE_NAME = 'stayjp-v150';
+const CACHE_NAME = 'stayjp-v151';
 const ASSETS = [
   './',
   './index.html',
@@ -25,7 +25,9 @@ const ASSETS = [
   './manifest.json',
   './terms.html',
   './privacy.html',
-  './refund.html'
+  './refund.html',
+  './account.html',
+  './quota.js'
 ];
 
 // Install: cache all assets
