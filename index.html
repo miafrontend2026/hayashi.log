@@ -1011,6 +1011,15 @@ select::-ms-expand { display: none; }
   [data-theme="dark"] .gc:hover, [data-theme="dark"] .vi:hover { box-shadow: 0 8px 20px rgba(0,0,0,.4) !important; }
 }
 
+/* DailyStory 故事 modal */
+.ds-body { display: flex; flex-direction: column; gap: 10px; padding: 4px 0; }
+.ds-sent { padding: 12px 14px; border-radius: 12px; background: var(--bg3); transition: all .25s var(--ease); cursor: pointer; border: 1px solid transparent; }
+.ds-sent:hover { background: var(--bg); border-color: var(--bd); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,.04); }
+.ds-sent.playing { background: rgba(212,101,74,.08); border-color: var(--ac); box-shadow: 0 0 0 3px rgba(212,101,74,.15); }
+.ds-j { font-size: 16px; line-height: 1.9; color: var(--tx); }
+.ds-hl { font-style: normal; font-weight: 700; color: var(--ac); background: rgba(212,101,74,.1); padding: 1px 4px; border-radius: 4px; }
+.ds-z { font-size: 13px; color: var(--tx2); margin-top: 6px; line-height: 1.6; padding-top: 6px; border-top: 1px dashed var(--bd); }
+
 /* prefers-reduced-motion: 全動畫立刻關(尊重系統設定) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
@@ -2164,6 +2173,198 @@ const Shadow = (() => {
   return { startCurrent, startFavs, start, favCount };
 })();
 
+// ========== DAILY STORY (今日故事) ==========
+// 把每日 20 個單字串成一篇短故事 + 跟讀。
+// Story 動態 fetch from scripts/daily-stories/output/{level}_{batchIdx}.json
+// 之後可改為從 Firestore content/master.stories 拉。
+const DailyStory = (() => {
+  // 故事庫:key = `${level}_${batchIdx}`,batchIdx = floor(totalOffset / DAILY_NEW)
+  // 動態 fetch 後填這個 cache。內嵌 fallback 給 batch 0 一篇示範。
+  const STORIES = {
+    'n5_0': {
+      title: 'N5 Day 1 · 我的家族',
+      vocab: ['私','僕','あなた','彼','彼女','皆さん','人','方','子供','男','女','男の子','女の子','大人','友達','名前','家族','お父さん','お母さん','お兄さん'],
+      sentences: [
+        { j: '私の名前は田中です。', z: '我叫田中。' },
+        { j: '家族は四人です。お父さん、お母さん、お兄さん、僕です。', z: '家裡有四個人:爸爸、媽媽、哥哥、我。' },
+        { j: '僕は男の子で、学校に友達がたくさんいます。', z: '我是男孩子,學校裡有很多朋友。' },
+        { j: 'クラスの男の子も女の子も、皆さん優しい人ばかりです。', z: '班上的男生女生,大家都是很善良的人。' },
+        { j: '隣の家に彼と彼女が住んでいます。', z: '隔壁住著他和她。' },
+        { j: '彼は大人の男の人、彼女は女の人で、子供もいます。', z: '他是大人男生,她是女生,還有一個小孩。' },
+        { j: 'あなたの家族には、優しい方がいますか?', z: '你家裡也有善良的人嗎?' },
+      ],
+    },
+  };
+
+  let _audio = null;
+  let _playing = false;
+  let _playToken = 0;
+
+  function getStoryId() {
+    const prog = getDailyProgress(currentLevel);
+    const batchIdx = Math.floor(prog.totalOffset / DAILY_NEW);
+    return `${currentLevel}_${batchIdx}`;
+  }
+
+  function highlightVocab(jp, vocabList) {
+    // 依長度排序,長詞先替換,避免「お父さん」被「父」吃掉
+    const sorted = [...vocabList].sort((a, b) => b.length - a.length);
+    let out = jp;
+    for (const w of sorted) {
+      const re = new RegExp(w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+      out = out.replace(re, `<em class="ds-hl">${w}</em>`);
+    }
+    return out;
+  }
+
+  async function fetchStory(id) {
+    if (STORIES[id]) return STORIES[id];
+    // 嘗試從 output/ 目錄拉(本機開發)或之後改 Firestore
+    try {
+      const r = await fetch(`scripts/daily-stories/output/${id}.json`);
+      if (!r.ok) return null;
+      const data = await r.json();
+      if (!data.pass || !data.story) return null;
+      // 同時保存 vocab list 進故事物件(畫面 highlight 要用)
+      const story = { ...data.story, vocab: data.vocab };
+      STORIES[id] = story;
+      return story;
+    } catch (e) { return null; }
+  }
+
+  async function open() {
+    const id = getStoryId();
+    let story = await fetchStory(id);
+    if (!story) {
+      const prog = getDailyProgress(currentLevel);
+      const batchIdx = Math.floor(prog.totalOffset / DAILY_NEW);
+      alert(`這個批次的故事還沒生成(${currentLevel.toUpperCase()} batch ${batchIdx + 1})\n\n目前已有 N5 batch 1-4。之後會補齊全部等級。`);
+      return;
+    }
+    showModal(story);
+  }
+
+  function showModal(story) {
+    let mask = document.getElementById('dsMask');
+    if (mask) mask.remove();
+    mask = document.createElement('div');
+    mask.id = 'dsMask';
+    mask.className = 'cc-mask';
+    mask.innerHTML = `
+      <div class="cc-box" style="width:min(560px,calc(100vw - 32px));max-height:85vh;overflow-y:auto">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div class="cc-title" style="font-size:16px;margin:0">📖 ${story.title}</div>
+          <button onclick="DailyStory.close()" style="background:none;border:none;color:var(--tx2);font-size:18px;cursor:pointer;padding:4px 8px">✕</button>
+        </div>
+        <div style="font-size:11px;color:var(--tx3);margin-bottom:14px">本批 20 個單字串成短文,粗體 = 今日學習目標。</div>
+        <div class="ds-body" id="dsBody">
+          ${story.sentences.map((s, i) => `
+            <div class="ds-sent" data-i="${i}">
+              <div class="ds-j" onclick="DailyStory.playOne(${i})">${highlightVocab(s.j, story.vocab)}</div>
+              <div class="ds-z" style="display:none">${s.z}</div>
+            </div>
+          `).join('')}
+        </div>
+        <div style="display:flex;gap:8px;margin-top:18px;flex-wrap:wrap">
+          <button class="cc-btn" id="dsPlayAll" onclick="DailyStory.playAll()" style="flex:1;background:var(--ac);color:#fff;border-color:var(--ac);font-size:14px;padding:11px">🔊 播放整段</button>
+          <button class="cc-btn" onclick="DailyStory.toggleTrans()" style="flex:1">🌐 切換中譯</button>
+        </div>
+        <div style="margin-top:10px;font-size:11px;color:var(--tx3);text-align:center">點任一句直接播 · 按 ESC 關閉</div>
+      </div>
+    `;
+    document.body.appendChild(mask);
+    requestAnimationFrame(() => mask.classList.add('on'));
+    document.addEventListener('keydown', _onEsc);
+  }
+
+  function _onEsc(e) { if (e.key === 'Escape') close(); }
+
+  function close() {
+    _playToken++;
+    stopAudio();
+    const mask = document.getElementById('dsMask');
+    if (mask) { mask.classList.remove('on'); setTimeout(() => mask.remove(), 250); }
+    document.removeEventListener('keydown', _onEsc);
+  }
+
+  function stopAudio() {
+    _playing = false;
+    if (window.speechSynthesis) speechSynthesis.cancel();
+    if (_audio) { try { _audio.pause(); _audio.src = ''; } catch (e) {} _audio = null; }
+    document.querySelectorAll('.ds-sent.playing').forEach(el => el.classList.remove('playing'));
+  }
+
+  function playSentence(text, onEnd) {
+    const hash = window.__TTS && window.__TTS[text];
+    if (hash) {
+      if (!_audio) _audio = new Audio();
+      _audio.onended = onEnd;
+      _audio.onerror = onEnd;
+      _audio.src = 'audio/tts/' + hash + '.mp3';
+      _audio.playbackRate = 0.95;
+      _audio.play().catch(() => speakBrowser(text, onEnd));
+    } else {
+      speakBrowser(text, onEnd);
+    }
+  }
+
+  function speakBrowser(text, onEnd) {
+    if (!window.speechSynthesis) { onEnd && onEnd(); return; }
+    speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang = 'ja-JP'; u.rate = 0.9;
+    const voices = speechSynthesis.getVoices();
+    const ja = voices.find(v => v.lang.startsWith('ja'));
+    if (ja) u.voice = ja;
+    u.onend = () => onEnd && onEnd();
+    speechSynthesis.speak(u);
+  }
+
+  function playOne(i) {
+    stopAudio();
+    const story = STORIES[getStoryId()];
+    if (!story) return;
+    const sent = story.sentences[i];
+    const el = document.querySelector(`.ds-sent[data-i="${i}"]`);
+    if (el) el.classList.add('playing');
+    playSentence(sent.j, () => { if (el) el.classList.remove('playing'); });
+  }
+
+  async function playAll() {
+    const story = STORIES[getStoryId()];
+    if (!story) return;
+    stopAudio();
+    _playing = true;
+    const myToken = ++_playToken;
+    const btn = document.getElementById('dsPlayAll');
+    if (btn) btn.textContent = '⏸ 暫停';
+    for (let i = 0; i < story.sentences.length; i++) {
+      if (myToken !== _playToken || !_playing) break;
+      const sent = story.sentences[i];
+      const el = document.querySelector(`.ds-sent[data-i="${i}"]`);
+      if (el) el.classList.add('playing');
+      await new Promise(resolve => playSentence(sent.j, resolve));
+      if (el) el.classList.remove('playing');
+      // 句間停頓
+      await new Promise(r => setTimeout(r, 350));
+    }
+    _playing = false;
+    if (btn) btn.textContent = '🔊 播放整段';
+  }
+
+  function toggleTrans() {
+    const body = document.getElementById('dsBody');
+    if (!body) return;
+    const showing = body.dataset.trans === 'on';
+    body.dataset.trans = showing ? 'off' : 'on';
+    body.querySelectorAll('.ds-z').forEach(el => {
+      el.style.display = showing ? 'none' : 'block';
+    });
+  }
+
+  return { open, close, playOne, playAll, toggleTrans };
+})();
+
 // ========== ANALYTICS ==========
 // Thin wrapper around gtag so call sites stay readable and we tolerate missing GA
 // (e.g. ad-blocker dropping the script). Param values are kept short — GA4 rejects
@@ -2582,6 +2783,7 @@ function renderVocab() {
       <button class="daily-btn ${dailyMode?'on':''}" onclick="toggleDailyMode()">${dailyMode?t('show_all'):t('daily_mode')}</button>
       <button class="shadow-trigger" onclick="Shadow.startCurrent()">🎧 跟讀本頁</button>
       ${dailyMode?`<button class="daily-btn" onclick="FlashCard.beginToday()">⚡ 快速背本批</button>`:''}
+      ${dailyMode?`<button class="daily-btn" onclick="DailyStory.open()" style="background:linear-gradient(135deg,#D4654A,#E8734A);color:#fff;border-color:#D4654A">📖 今日故事</button>`:''}
       ${dailyMode?`<div class="daily-batch-row">
         ${prog.totalOffset>0?`<button class="daily-btn" onclick="prevDailyBatch()">${t('prev_batch')}</button>`:''}
         ${prog.totalOffset<cnt?`<button class="daily-btn" onclick="nextDailyBatch()">${t('next_batch')}</button>`:''}
