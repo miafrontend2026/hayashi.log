@@ -142,3 +142,36 @@ for (const r of out) {
 for (const [k, v] of Object.entries(buckets).sort((a, b) => b[1] - a[1])) {
   console.log(`  ${k.padEnd(20)} ${v}`);
 }
+
+// === Sanity guard:每個預期 source 都該收到合理數量 ===
+// 這條 guard 救命的場景:資料檔搬家但 build script 沒跟著改(歷史上踩過 2 次:
+//   1. N5/N4 grammar 從 index.html 搬到 grammar-n5.js / grammar-n4.js
+//   2. listening 從 listening.js 搬到 listening-items.js
+// 漏掉的 source 不會報錯,只會悄悄 fallback 瀏覽器 TTS。加 assertion 強制 fail。
+const EXPECTED_MIN = {
+  'vocab-n5':         500,
+  'vocab-n4':         500,
+  'vocab-n3':         1500,
+  'vocab-n2':         1500,
+  'vocab-n1':         1500,
+  'grammar-n5':       100,
+  'grammar-n4':       100,
+  'grammar-n3':       150,
+  'grammar-n2':       150,
+  'grammar-n1':       150,
+  'confusables-word': 100,
+  'confusables-eg':   100,
+  'listening':        80,
+  'verbs':            10,
+};
+const missing = [];
+for (const [src, min] of Object.entries(EXPECTED_MIN)) {
+  const got = buckets[src] || 0;
+  if (got < min) missing.push(`  ${src.padEnd(20)} got ${got} < expected ${min}`);
+}
+if (missing.length) {
+  console.error('\n❌ SOURCE COVERAGE FAIL — 可能某資料檔搬家但 collect.mjs 沒跟著改:');
+  console.error(missing.join('\n'));
+  process.exit(1);
+}
+console.log('\n✅ Source coverage OK — 所有預期資料源都收到足夠數量');
