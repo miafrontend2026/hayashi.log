@@ -17,20 +17,18 @@ service cloud.firestore {
                         && request.auth.uid == userId;
     }
 
-    // 意見回饋 — 從 contact.html 的表單寫入
-    // 必須登入才能 create（防 bot 濫寫），只有你從 Console 讀
+    // 意見回饋 — contact.html 表單寫入,admin.html 後台讀寫
+    // 創建:登入用戶寫自己的(防偽造)
+    // 讀/改/刪:僅 owner email = stayjpplan@gmail.com 或 abc83327@gmail.com
     match /feedback/{docId} {
-      allow read, update, delete: if false;
-      allow create: if
-        // 必須登入
+      allow read, update, delete: if
         request.auth != null &&
-        // uid 必須與 auth.uid 一致（防偽造他人身分）
+        request.auth.token.email in ['stayjpplan@gmail.com', 'abc83327@gmail.com'];
+      allow create: if
+        request.auth != null &&
         request.resource.data.uid == request.auth.uid &&
-        // 必要欄位齊全
         request.resource.data.keys().hasAll(['type', 'message', 'uid', 'createdAt']) &&
-        // type 必須是預期值
         request.resource.data.type in ['bug', 'feature', 'content', 'other'] &&
-        // 訊息非空且 ≤ 5000 字元
         request.resource.data.message is string &&
         request.resource.data.message.size() > 0 &&
         request.resource.data.message.size() <= 5000;

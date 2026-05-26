@@ -1,0 +1,487 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin · 再留計劃</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="stayjpplan.png?v=4" type="image/png">
+<style>
+:root { --bg:#FAF9F6;--bg2:#FFFFFF;--bg3:#F3F1ED;--tx:#2C2C2C;--tx2:#7A7A7A;--tx3:#ACACAC;--ac:#D4654A;--ac2:#4A7FD4;--bd:#E8E5E0;--r:10px; }
+[data-theme="dark"] { --bg:#1C1C1E;--bg2:#2C2C2E;--bg3:#242426;--tx:#E5E5E5;--tx2:#8E8E93;--tx3:#636366;--ac:#E8734A;--ac2:#6BA8F5;--bd:#3A3A3C; }
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Hiragino Sans","Noto Sans JP","PingFang TC",system-ui,sans-serif;background:var(--bg);color:var(--tx);line-height:1.5;font-size:14px;-webkit-font-smoothing:antialiased}
+a{color:var(--ac2);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Header */
+.hd{position:sticky;top:0;background:var(--bg);z-index:50;border-bottom:1px solid var(--bd);padding:10px 20px;display:flex;align-items:center;gap:16px}
+.hd h1{font-size:15px;font-weight:700;color:var(--ac)}
+.hd .tabs{display:flex;gap:4px;margin-left:auto}
+.hd .tabs button{padding:6px 14px;background:none;border:1px solid var(--bd);border-radius:8px;font-size:13px;color:var(--tx2);cursor:pointer;font-weight:600}
+.hd .tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.hd .me{font-size:12px;color:var(--tx3)}
+
+/* Layout */
+.wrap{display:flex;height:calc(100vh - 49px)}
+.list{width:420px;border-right:1px solid var(--bd);overflow-y:auto;background:var(--bg)}
+.detail{flex:1;overflow-y:auto;padding:24px;background:var(--bg2)}
+
+/* Filters */
+.filters{padding:12px 16px;border-bottom:1px solid var(--bd);background:var(--bg2);position:sticky;top:0;z-index:10}
+.filter-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.filter-row:last-child{margin-bottom:0}
+.chip{padding:4px 10px;background:var(--bg3);border:1px solid var(--bd);border-radius:999px;font-size:11px;color:var(--tx2);cursor:pointer;font-weight:600;white-space:nowrap}
+.chip:hover{background:var(--bd)}
+.chip.on{background:var(--tx);color:var(--bg);border-color:var(--tx)}
+.chip.on.status-new{background:#EF4444;border-color:#EF4444;color:#fff}
+.chip.on.status-in_progress{background:#F59E0B;border-color:#F59E0B;color:#fff}
+.chip.on.status-resolved{background:#10B981;border-color:#10B981;color:#fff}
+.chip.on.status-ignored{background:var(--tx3);border-color:var(--tx3);color:#fff}
+.summary{font-size:11px;color:var(--tx3);margin-top:6px}
+
+/* List rows */
+.row{padding:12px 16px;border-bottom:1px solid var(--bd);cursor:pointer;display:flex;flex-direction:column;gap:4px}
+.row:hover{background:var(--bg3)}
+.row.active{background:var(--bg3);border-left:3px solid var(--ac);padding-left:13px}
+.row .top{display:flex;align-items:center;gap:6px;font-size:11px}
+.row .badge{padding:2px 7px;border-radius:999px;font-size:10px;font-weight:700;color:#fff}
+.b-new{background:#EF4444}
+.b-in_progress{background:#F59E0B}
+.b-resolved{background:#10B981}
+.b-ignored{background:var(--tx3)}
+.b-type{background:var(--ac2);background:rgba(74,127,212,.12);color:var(--ac2)}
+.row .who{font-size:12px;color:var(--tx);font-weight:600}
+.row .preview{font-size:13px;color:var(--tx);line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.row .date{font-size:11px;color:var(--tx3);margin-left:auto}
+
+/* Detail panel */
+.empty{display:flex;align-items:center;justify-content:center;height:100%;color:var(--tx3);font-size:14px}
+.det-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:18px;padding-bottom:14px;border-bottom:1px solid var(--bd)}
+.det-head .ttl{font-size:18px;font-weight:700;color:var(--tx)}
+.det-head .meta{font-size:12px;color:var(--tx2);margin-top:4px;display:flex;flex-wrap:wrap;gap:10px}
+.det-head .meta b{color:var(--tx)}
+.det-msg{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:14px 16px;font-size:14px;color:var(--tx);white-space:pre-wrap;word-break:break-word;line-height:1.7;margin-bottom:18px}
+.det-actions{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:18px}
+.btn{padding:8px 14px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:8px;cursor:pointer;font-size:13px;font-weight:600}
+.btn:hover{background:var(--bg3)}
+.btn.primary{background:var(--ac);color:#fff;border-color:var(--ac)}
+.btn.primary:hover{opacity:.9}
+.btn.danger{color:#EF4444;border-color:#EF4444}
+.btn.danger:hover{background:rgba(239,68,68,.06)}
+.btn.success{background:#10B981;color:#fff;border-color:#10B981}
+.btn.warning{background:#F59E0B;color:#fff;border-color:#F59E0B}
+.det-section{margin-bottom:18px}
+.det-section h3{font-size:13px;color:var(--tx2);margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.5px}
+textarea.note{width:100%;min-height:90px;padding:10px 12px;border:1px solid var(--bd);background:var(--bg);color:var(--tx);border-radius:8px;font-family:inherit;font-size:13px;line-height:1.5;resize:vertical}
+textarea.note:focus{outline:none;border-color:var(--ac)}
+
+/* Templates */
+.tmpl-list{display:grid;grid-template-columns:1fr;gap:6px}
+.tmpl{padding:10px 12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;cursor:pointer;font-size:12px}
+.tmpl:hover{background:var(--bd)}
+.tmpl b{display:block;font-size:13px;color:var(--tx);margin-bottom:2px}
+
+/* Stats tab */
+.stats{padding:24px;display:none}
+.stats.on{display:block}
+.wrap.stats-mode{display:none}
+.wrap.list-mode{display:flex}
+.stat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;margin-bottom:24px}
+.stat{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:18px}
+.stat .lbl{font-size:11px;color:var(--tx2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;font-weight:700}
+.stat .val{font-size:28px;font-weight:800;color:var(--tx);letter-spacing:-.5px}
+.stat .sub{font-size:11px;color:var(--tx3);margin-top:4px}
+
+/* Login gate */
+.gate{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:14px}
+.gate h1{font-size:24px;color:var(--ac);font-weight:800}
+.gate button{padding:10px 20px;background:var(--ac);color:#fff;border:none;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+.gate .err{color:#EF4444;font-size:13px}
+
+@media (max-width:760px){
+  .wrap{flex-direction:column;height:auto}
+  .list{width:100%;max-height:50vh}
+  .detail{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<div id="gate" class="gate" style="display:none">
+  <h1>🔒 Admin</h1>
+  <p style="font-size:13px;color:var(--tx2)">需用 owner 帳號登入</p>
+  <button id="loginBtn">Google 登入</button>
+  <p id="errMsg" class="err"></p>
+</div>
+
+<div id="app" style="display:none">
+  <header class="hd">
+    <h1>📋 Admin · StayJP</h1>
+    <div class="tabs">
+      <button id="tabFeedback" class="on">📥 回饋</button>
+      <button id="tabStats">📊 報表</button>
+    </div>
+    <div class="me" id="meInfo"></div>
+    <button class="btn" onclick="logout()" style="font-size:11px;padding:4px 10px">登出</button>
+  </header>
+
+  <div class="wrap list-mode" id="wrapFeedback">
+    <aside class="list">
+      <div class="filters">
+        <div class="filter-row" id="filterStatus">
+          <span class="chip on" data-v="all">全部</span>
+          <span class="chip status-new" data-v="new">🔴 新</span>
+          <span class="chip status-in_progress" data-v="in_progress">🟡 處理中</span>
+          <span class="chip status-resolved" data-v="resolved">🟢 已解決</span>
+          <span class="chip status-ignored" data-v="ignored">⚪ 忽略</span>
+        </div>
+        <div class="filter-row" id="filterType">
+          <span class="chip on" data-v="all">全類別</span>
+          <span class="chip" data-v="bug">bug</span>
+          <span class="chip" data-v="content">內容</span>
+          <span class="chip" data-v="feature">建議</span>
+          <span class="chip" data-v="other">其他</span>
+        </div>
+        <div class="summary" id="summary">載入中…</div>
+      </div>
+      <div id="rows"></div>
+    </aside>
+
+    <main class="detail">
+      <div id="emptyState" class="empty">← 左側選一筆查看</div>
+      <div id="detail" style="display:none">
+        <div class="det-head">
+          <div>
+            <div class="ttl" id="dTtl"></div>
+            <div class="meta" id="dMeta"></div>
+          </div>
+          <span class="badge" id="dBadge"></span>
+        </div>
+
+        <div class="det-section">
+          <h3>原文</h3>
+          <div class="det-msg" id="dMsg"></div>
+        </div>
+
+        <div class="det-section">
+          <h3>處理動作</h3>
+          <div class="det-actions">
+            <button class="btn warning" onclick="setStatus('in_progress')">🟡 標處理中</button>
+            <button class="btn success" onclick="setStatus('resolved')">🟢 標已解決</button>
+            <button class="btn" onclick="setStatus('ignored')">⚪ 忽略</button>
+            <button class="btn" onclick="setStatus('new')">↩ 重設為新</button>
+          </div>
+        </div>
+
+        <div class="det-section">
+          <h3>處理筆記(只你看得到)</h3>
+          <textarea class="note" id="dNote" placeholder="例:已修正,commit XXXXX..."></textarea>
+          <div style="margin-top:6px"><button class="btn" onclick="saveNote()">💾 儲存筆記</button></div>
+        </div>
+
+        <div class="det-section">
+          <h3>✉️ 一鍵回信(自動帶模板)</h3>
+          <div class="tmpl-list" id="tmplList"></div>
+        </div>
+
+        <div class="det-section">
+          <h3>原始資料 (debug)</h3>
+          <pre style="background:var(--bg3);padding:10px;border-radius:8px;font-size:11px;overflow:auto;color:var(--tx2)" id="dRaw"></pre>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="wrapStats" class="stats">
+    <div class="stat-grid" id="statGrid"></div>
+    <div style="background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r);padding:18px;font-size:13px;color:var(--tx2)">
+      💡 訂閱 / 早鳥剩餘 / 月收入 等金流相關指標等綠界 callback 接好後上線。<br>
+      目前只顯示回饋處理統計 + 用戶總數。
+    </div>
+  </div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
+<script>
+const ADMIN_EMAILS = ['stayjpplan@gmail.com', 'abc83327@gmail.com'];
+
+const fbConfig = {
+  apiKey: "AIzaSyDnmg2XOuvwgE8m8xCF5sS4o0nQYoUplPI",
+  authDomain: "jpnote-1bdd6.firebaseapp.com",
+  projectId: "jpnote-1bdd6",
+  storageBucket: "jpnote-1bdd6.firebasestorage.app",
+  messagingSenderId: "666368174384"
+};
+firebase.initializeApp(fbConfig);
+const db = firebase.firestore();
+const auth = firebase.auth();
+
+// ── 回信模板 ──
+const TEMPLATES = {
+  bug: [
+    { name: 'bug 已修正', subject: '[再留計劃] 您回報的 bug 已修正', body: '您好,\n\n感謝您 {DATE} 回報的 bug:\n「{ISSUE}」\n\n已修正並上線,重新整理頁面就會生效。如有其他狀況歡迎繼續回報。\n\nStayJP 團隊' },
+    { name: 'bug 釐清中', subject: '[再留計劃] 已收到您的 bug 回報', body: '您好,\n\n收到您的 bug 回報,目前正在 debug 中。修正後會再通知您。\n\n感謝您的耐心。\n\nStayJP 團隊' },
+  ],
+  content: [
+    { name: '內容已修正', subject: '[再留計劃] 您回報的內容問題已修正', body: '您好,\n\n感謝您 {DATE} 回報:\n「{ISSUE}」\n\n已修正內容並上線,重新整理頁面就會看到。如有其他內容問題歡迎繼續回報。\n\nStayJP 團隊' },
+    { name: '內容無誤(說明)', subject: '[再留計劃] 關於您的內容回報', body: '您好,\n\n感謝您回報的內容問題,我們已 review 過,這部分是符合 JLPT 範圍的正確用法,原因如下:\n\n[補充說明]\n\n如還有疑問歡迎繼續討論。\n\nStayJP 團隊' },
+  ],
+  feature: [
+    { name: '建議已採納', subject: '[再留計劃] 您的建議已採納', body: '您好,\n\n感謝您的建議:\n「{ISSUE}」\n\n這想法很好,已加入開發計畫,預計近期上線。完成後會再通知您。\n\nStayJP 團隊' },
+    { name: '建議列入考慮', subject: '[再留計劃] 感謝您的建議', body: '您好,\n\n收到您的建議,已列入未來考慮清單。目前優先級不高,但如果累積一定支持會優先實作。\n\n感謝您的回饋。\n\nStayJP 團隊' },
+    { name: '建議婉拒', subject: '[再留計劃] 關於您的建議', body: '您好,\n\n感謝您的建議,經評估後因 [原因],目前不會實作這個功能。\n\n如有其他想法歡迎繼續分享。\n\nStayJP 團隊' },
+  ],
+  other: [
+    { name: '一般回覆', subject: '[再留計劃] 已收到您的訊息', body: '您好,\n\n感謝您的訊息,我們已收到並處理:\n\n[在此填寫回覆內容]\n\nStayJP 團隊' },
+    { name: '感謝鼓勵', subject: '[再留計劃] 感謝您的支持!', body: '您好,\n\n非常感謝您的鼓勵與支持!StayJP 會繼續努力,如果有什麼地方需要改進歡迎隨時告訴我們。\n\nStayJP 團隊' },
+  ],
+};
+
+let currentFeedback = null;
+let currentList = [];
+let filterStatus = 'all';
+let filterType = 'all';
+let unsubList = null;
+
+// ── auth ──
+auth.onAuthStateChanged(user => {
+  const gate = document.getElementById('gate');
+  const app = document.getElementById('app');
+  if (!user || !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) {
+    gate.style.display = 'flex';
+    app.style.display = 'none';
+    if (user && !ADMIN_EMAILS.includes((user.email || '').toLowerCase())) {
+      document.getElementById('errMsg').textContent = `${user.email} 不是 admin 帳號`;
+      auth.signOut();
+    }
+    return;
+  }
+  gate.style.display = 'none';
+  app.style.display = 'block';
+  document.getElementById('meInfo').textContent = user.email;
+  subscribeFeedback();
+});
+
+document.getElementById('loginBtn').onclick = () => {
+  const provider = new firebase.auth.GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
+  auth.signInWithPopup(provider).catch(err => {
+    document.getElementById('errMsg').textContent = '登入失敗:' + err.message;
+  });
+};
+
+function logout() { auth.signOut(); location.reload(); }
+
+// ── tabs ──
+document.getElementById('tabFeedback').onclick = () => switchTab('feedback');
+document.getElementById('tabStats').onclick = () => switchTab('stats');
+function switchTab(tab) {
+  document.getElementById('tabFeedback').classList.toggle('on', tab === 'feedback');
+  document.getElementById('tabStats').classList.toggle('on', tab === 'stats');
+  document.getElementById('wrapFeedback').style.display = tab === 'feedback' ? 'flex' : 'none';
+  document.getElementById('wrapStats').classList.toggle('on', tab === 'stats');
+  if (tab === 'stats') renderStats();
+}
+
+// ── feedback subscription ──
+function subscribeFeedback() {
+  if (unsubList) unsubList();
+  unsubList = db.collection('feedback').orderBy('createdAt', 'desc').limit(500)
+    .onSnapshot(snap => {
+      currentList = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderList();
+    }, err => {
+      document.getElementById('rows').innerHTML = `<div style="padding:20px;color:#EF4444;font-size:13px">讀取失敗:${err.message}<br><br>確認 firestore.rules 已部署,且你的 email 在 ADMIN_EMAILS 白名單。</div>`;
+    });
+}
+
+// ── filters ──
+document.getElementById('filterStatus').onclick = e => {
+  if (!e.target.dataset.v) return;
+  filterStatus = e.target.dataset.v;
+  document.querySelectorAll('#filterStatus .chip').forEach(c => c.classList.toggle('on', c.dataset.v === filterStatus));
+  renderList();
+};
+document.getElementById('filterType').onclick = e => {
+  if (!e.target.dataset.v) return;
+  filterType = e.target.dataset.v;
+  document.querySelectorAll('#filterType .chip').forEach(c => c.classList.toggle('on', c.dataset.v === filterType));
+  renderList();
+};
+
+function getFiltered() {
+  return currentList.filter(f => {
+    const status = f.status || 'new';
+    if (filterStatus !== 'all' && status !== filterStatus) return false;
+    if (filterType !== 'all' && f.type !== filterType) return false;
+    return true;
+  });
+}
+
+function renderList() {
+  const filtered = getFiltered();
+  const counts = currentList.reduce((acc, f) => {
+    const s = f.status || 'new';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+  document.getElementById('summary').innerHTML =
+    `共 ${currentList.length} 筆 · 🔴 ${counts.new || 0} 新 · 🟡 ${counts.in_progress || 0} 處理中 · 🟢 ${counts.resolved || 0} 解決 · ⚪ ${counts.ignored || 0} 忽略 · 顯示 ${filtered.length}`;
+
+  const rows = document.getElementById('rows');
+  if (!filtered.length) {
+    rows.innerHTML = '<div style="padding:40px;text-align:center;color:var(--tx3);font-size:13px">沒有符合條件的回饋</div>';
+    return;
+  }
+  rows.innerHTML = filtered.map(f => {
+    const status = f.status || 'new';
+    const type = f.type || 'other';
+    const who = f.email || f.uid?.slice(0, 8) || '匿名';
+    const date = f.createdAt?.toDate ? f.createdAt.toDate().toLocaleString('zh-TW', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-';
+    const msg = (f.message || '').slice(0, 200);
+    return `<div class="row ${currentFeedback?.id === f.id ? 'active' : ''}" data-id="${f.id}">
+      <div class="top">
+        <span class="badge b-${status}">${status === 'new' ? '🔴' : status === 'in_progress' ? '🟡' : status === 'resolved' ? '🟢' : '⚪'}</span>
+        <span class="badge b-type">${type}</span>
+        <span class="date">${date}</span>
+      </div>
+      <div class="who">${escapeHtml(who)}</div>
+      <div class="preview">${escapeHtml(msg)}</div>
+    </div>`;
+  }).join('');
+  rows.querySelectorAll('.row').forEach(r => {
+    r.onclick = () => openDetail(r.dataset.id);
+  });
+}
+
+function openDetail(id) {
+  const f = currentList.find(x => x.id === id);
+  if (!f) return;
+  currentFeedback = f;
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('detail').style.display = 'block';
+  document.querySelectorAll('.row').forEach(r => r.classList.toggle('active', r.dataset.id === id));
+
+  const status = f.status || 'new';
+  const type = f.type || 'other';
+  const date = f.createdAt?.toDate ? f.createdAt.toDate().toLocaleString('zh-TW') : '-';
+  const who = f.displayName || f.email || f.uid?.slice(0, 12) || '匿名';
+
+  document.getElementById('dTtl').textContent = `${type.toUpperCase()} · ${who}`;
+  document.getElementById('dMeta').innerHTML = `
+    <span><b>Email:</b> ${escapeHtml(f.email || '-')}</span>
+    <span><b>UID:</b> ${(f.uid || '-').slice(0, 12)}</span>
+    <span><b>提交時間:</b> ${date}</span>
+    ${f.resolved_at ? `<span><b>處理時間:</b> ${f.resolved_at.toDate().toLocaleString('zh-TW')}</span>` : ''}
+    ${f.email_sent_at ? `<span><b>已回信:</b> ${f.email_sent_at.toDate().toLocaleString('zh-TW')}</span>` : ''}
+  `;
+  document.getElementById('dBadge').className = `badge b-${status}`;
+  document.getElementById('dBadge').textContent = ({ new: '🔴 新', in_progress: '🟡 處理中', resolved: '🟢 已解決', ignored: '⚪ 忽略' })[status] || status;
+  document.getElementById('dMsg').textContent = f.message || '';
+  document.getElementById('dNote').value = f.resolution_note || '';
+  document.getElementById('dRaw').textContent = JSON.stringify({ ...f, createdAt: date }, null, 2);
+
+  renderTemplates(type, f);
+}
+
+function renderTemplates(type, f) {
+  const tmpls = (TEMPLATES[type] || TEMPLATES.other);
+  const list = document.getElementById('tmplList');
+  if (!f.email) {
+    list.innerHTML = '<div style="padding:12px;background:var(--bg3);border:1px solid var(--bd);border-radius:8px;color:var(--tx2);font-size:12px">⚠️ 這筆回饋沒留 email,無法直接回信</div>';
+    return;
+  }
+  list.innerHTML = tmpls.map((t, i) => `
+    <div class="tmpl" data-i="${i}">
+      <b>${t.name}</b>
+      <span style="color:var(--tx2)">${t.subject}</span>
+    </div>
+  `).join('');
+  list.querySelectorAll('.tmpl').forEach(el => {
+    el.onclick = () => sendEmail(tmpls[+el.dataset.i], f);
+  });
+}
+
+function sendEmail(tmpl, f) {
+  const date = f.createdAt?.toDate ? f.createdAt.toDate().toLocaleDateString('zh-TW') : '今日';
+  const issue = (f.message || '').slice(0, 120).replace(/\n/g, ' ');
+  const subject = tmpl.subject;
+  const body = tmpl.body.replace(/\{DATE\}/g, date).replace(/\{ISSUE\}/g, issue);
+  const url = `mailto:${encodeURIComponent(f.email)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+  window.open(url, '_blank');
+
+  // mark email sent
+  db.collection('feedback').doc(f.id).update({
+    email_sent_at: firebase.firestore.FieldValue.serverTimestamp(),
+    email_subject: subject,
+  }).catch(err => alert('標記寄信失敗:' + err.message));
+}
+
+async function setStatus(newStatus) {
+  if (!currentFeedback) return;
+  const updates = { status: newStatus };
+  if (newStatus === 'resolved') updates.resolved_at = firebase.firestore.FieldValue.serverTimestamp();
+  try {
+    await db.collection('feedback').doc(currentFeedback.id).update(updates);
+  } catch (err) {
+    alert('更新失敗:' + err.message);
+  }
+}
+
+async function saveNote() {
+  if (!currentFeedback) return;
+  const note = document.getElementById('dNote').value;
+  try {
+    await db.collection('feedback').doc(currentFeedback.id).update({ resolution_note: note });
+    alert('已儲存');
+  } catch (err) {
+    alert('儲存失敗:' + err.message);
+  }
+}
+
+// ── stats ──
+function renderStats() {
+  const counts = currentList.reduce((acc, f) => {
+    const s = f.status || 'new';
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+  // 平均解決時間
+  const resolved = currentList.filter(f => f.status === 'resolved' && f.resolved_at && f.createdAt);
+  const avgDays = resolved.length
+    ? (resolved.reduce((sum, f) => sum + (f.resolved_at.toMillis() - f.createdAt.toMillis()), 0) / resolved.length / 86400000).toFixed(1)
+    : '-';
+  // 本週新增
+  const weekAgo = Date.now() - 7 * 86400000;
+  const thisWeek = currentList.filter(f => f.createdAt?.toMillis() > weekAgo).length;
+  // 類別分布
+  const byType = currentList.reduce((acc, f) => {
+    acc[f.type || 'other'] = (acc[f.type || 'other'] || 0) + 1;
+    return acc;
+  }, {});
+
+  document.getElementById('statGrid').innerHTML = `
+    <div class="stat"><div class="lbl">未處理</div><div class="val">${counts.new || 0}</div><div class="sub">🔴 等你看</div></div>
+    <div class="stat"><div class="lbl">處理中</div><div class="val">${counts.in_progress || 0}</div><div class="sub">🟡 標記為 in_progress</div></div>
+    <div class="stat"><div class="lbl">已解決</div><div class="val">${counts.resolved || 0}</div><div class="sub">🟢 全時段</div></div>
+    <div class="stat"><div class="lbl">本週新增</div><div class="val">${thisWeek}</div><div class="sub">過去 7 天</div></div>
+    <div class="stat"><div class="lbl">平均解決時間</div><div class="val">${avgDays}<small style="font-size:14px;color:var(--tx2)"> 天</small></div><div class="sub">已解決平均</div></div>
+    <div class="stat"><div class="lbl">總筆數</div><div class="val">${currentList.length}</div><div class="sub">含所有狀態</div></div>
+    <div class="stat"><div class="lbl">bug</div><div class="val">${byType.bug || 0}</div></div>
+    <div class="stat"><div class="lbl">內容</div><div class="val">${byType.content || 0}</div></div>
+    <div class="stat"><div class="lbl">建議</div><div class="val">${byType.feature || 0}</div></div>
+    <div class="stat"><div class="lbl">其他</div><div class="val">${byType.other || 0}</div></div>
+  `;
+}
+
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+}
+</script>
+</body>
+</html>
