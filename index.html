@@ -923,8 +923,61 @@ select::-ms-expand { display: none; }
   [data-theme="dark"] .gc:hover { box-shadow: 0 4px 12px rgba(0,0,0,.3); }
 }
 /* 主要區塊切換時的淡入（mode/tab 切換重渲染） */
-@keyframes fadeInSoft { from { opacity: 0; } to { opacity: 1; } }
-#main > * { animation: fadeInSoft .22s var(--ease); }
+@keyframes fadeInSoft { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+#main > * { animation: fadeInSoft .26s cubic-bezier(.2,.8,.2,1); }
+
+/* == 絲滑加強 polish pass(2026-05-26) ==
+ * 套到全站,讓 modal / tab / toggle 都帶 spring 質感。
+ * 尊重 prefers-reduced-motion(macOS / iOS 系統設定) — 全動畫立刻關。
+ */
+
+/* cc-mask 自訂彈窗:加長 + spring overshoot + 玻璃感 backdrop */
+.cc-mask { transition: opacity .24s var(--ease); backdrop-filter: blur(8px) saturate(140%); -webkit-backdrop-filter: blur(8px) saturate(140%); }
+.cc-box { transform: scale(.9) translateY(10px); opacity: 0; transition: transform .32s cubic-bezier(.34,1.56,.64,1), opacity .24s var(--ease); }
+.cc-mask.on .cc-box { transform: scale(1) translateY(0); opacity: 1; }
+
+/* drawer 玻璃感 backdrop */
+.drawer-bg { transition: opacity .24s var(--ease); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); }
+
+/* tab-pill / mode-pill on 狀態小放大 spring,點選時更有反饋 */
+.tab-pill, .mode-pill, .fav-pill {
+  transition: background .2s var(--ease), color .2s var(--ease),
+              transform .26s cubic-bezier(.34,1.56,.64,1),
+              border-color .2s var(--ease);
+}
+.tab-pill.on, .mode-pill.on { transform: scale(1.05); }
+
+/* 星 / 收藏 / icon toggle:點下凹下 + on 狀態 pulse */
+.star, .gm-btn, .ex-spk {
+  transition: transform .22s cubic-bezier(.34,1.56,.64,1),
+              fill .2s var(--ease), stroke .2s var(--ease),
+              background .2s var(--ease), border-color .2s var(--ease);
+}
+.star:active, .gm-btn:active, .ex-spk:active { transform: scale(.86); }
+@keyframes starPulse {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.35); }
+  100% { transform: scale(1); }
+}
+.star.on { animation: starPulse .42s cubic-bezier(.34,1.56,.64,1); }
+
+/* Toast / WGToast:進場 spring */
+#wgToast { transition: opacity .24s var(--ease), transform .32s cubic-bezier(.34,1.56,.64,1) !important; }
+
+/* 卡片展開:用 cubic-bezier 讓「咻」一聲更順 */
+.gc .gb { transition: max-height .42s cubic-bezier(.4,0,.2,1); }
+.gc .arr { transition: transform .3s cubic-bezier(.34,1.56,.64,1); }
+.gc.o .arr { transform: rotate(180deg); }
+
+/* prefers-reduced-motion: 全動畫立刻關(尊重系統設定) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* SRS */
 .srs-card {
