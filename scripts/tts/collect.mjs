@@ -49,13 +49,14 @@ function harvestInlineGrammar(src, levelPrefix, sourceLabel) {
 // ---- collect ------------------------------------------------------------
 console.log('Scanning sources...');
 
-// Grammar in index.html (N5 + N4)
+// Grammar:N5/N4 早期 inline 在 index.html,後來搬出去獨立檔(Firestore content/master 同步用)
+// 兩處都掃,index.html 是歷史遺留,grammar-{n5,n4}.js 是當前真實 source of truth
 const html = fs.readFileSync(path.join(ROOT, 'index.html'), 'utf8');
-harvestInlineGrammar(html, 'n5', 'grammar-n5');
-harvestInlineGrammar(html, 'n4', 'grammar-n4');
+harvestInlineGrammar(html, 'n5', 'grammar-n5-inline');
+harvestInlineGrammar(html, 'n4', 'grammar-n4-inline');
 
-// Grammar in standalone files (N3 N2 N1)
-for (const lv of ['n3', 'n2', 'n1']) {
+// Grammar in standalone files (N5 N4 N3 N2 N1) — N5/N4 是 2026-05 後新增的 fallback 檔
+for (const lv of ['n5', 'n4', 'n3', 'n2', 'n1']) {
   const file = `grammar-${lv}.js`;
   if (!fs.existsSync(path.join(ROOT, file))) continue;
   const src = fs.readFileSync(path.join(ROOT, file), 'utf8');
@@ -101,9 +102,10 @@ const verbRe = /speak\('([^']+)'\)/g;
 let v;
 while ((v = verbRe.exec(verbsHtml))) add(v[1], 'verbs');
 
-// Listening — every script:"..." inside listening.js item bank.
-// Frontend joins multi-line dialog with 。 before speaking, so we mirror that here.
-const listenSrc = fs.readFileSync(path.join(ROOT, 'listening.js'), 'utf8');
+// Listening — every script:"..." inside listening-items.js (LISTENING_ITEMS_SRC bank).
+// Frontend (listening.js:234) feeds script.replace(/\n/g, '。') to speakText, so we mirror that.
+// 2026-05-26:從 listening.js 改成 listening-items.js — 資料早就搬走了
+const listenSrc = fs.readFileSync(path.join(ROOT, 'listening-items.js'), 'utf8');
 const scriptRe = /script:"((?:\\.|[^"\\])*)"/g;
 let ls;
 while ((ls = scriptRe.exec(listenSrc))) {
