@@ -19,7 +19,7 @@ import { PLANS, PlanKey } from "./utils/constants";
 import { verifyCheckMacValue } from "./utils/ecpay";
 import {
   writeTransaction, getSubscription, writeSubscription, patchSubscription,
-  tryReserveEarlyBird, nowMs, plusDays, SubscriptionDoc,
+  tryReserveEarlyBird, nowMs, plusDays, SubscriptionDoc, db,
 } from "./utils/firestore";
 
 export const ecpayCallback = functions.onRequest(
@@ -59,6 +59,23 @@ export const ecpayCallback = functions.onRequest(
       const rtnCode         = String(body.RtnCode || "0");
       const rtnMsg          = body.RtnMsg || "";
       const isSuccess       = rtnCode === "1";
+
+      // ── Idempotency check ──
+      // ECPay 在 sandbox / 定期定額 偶會重發 callback;同個 TradeNo 已成功寫過就 skip
+      // 用 external_id + status=success 當 dedupe key
+      const idempotencyKey = tradeNo || merchantTradeNo;
+      if (idempotencyKey) {
+        const dupSnap = await db.collection("transactions")
+          .where("uid", "==", uid)
+          .where("external_id", "==", idempotencyKey)
+          .where("status", "==", "success")
+          .limit(1).get();
+        if (!dupSnap.empty) {
+          console.log("Idempotency: callback already processed for", { uid, idempotencyKey });
+          res.status(200).send("1|OK");
+          return;
+        }
+      }
 
       // 3. 寫帳本
       const existingSub = await getSubscription(uid);
