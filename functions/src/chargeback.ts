@@ -13,7 +13,13 @@ import {
 if (admin.apps.length === 0) admin.initializeApp();
 
 export const chargeback = functions.onRequest(
-  { region: "asia-east1" },
+  {
+    region: "asia-east1",
+    maxInstances: 5,           // chargeback 非常少見
+    timeoutSeconds: 30,
+    memory: "256MiB",
+    concurrency: 40,
+  },
   async (req, res) => {
     try {
       const body = req.body as Record<string, string>;

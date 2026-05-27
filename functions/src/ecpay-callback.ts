@@ -23,7 +23,13 @@ import {
 } from "./utils/firestore";
 
 export const ecpayCallback = functions.onRequest(
-  { region: "asia-east1" },
+  {
+    region: "asia-east1",
+    maxInstances: 20,         // server-to-server,允許多一點
+    timeoutSeconds: 60,        // 寫 Firestore + 早鳥 transaction 算進去
+    memory: "256MiB",
+    concurrency: 80,
+  },
   async (req, res) => {
     try {
       // ECPay 是 x-www-form-urlencoded POST

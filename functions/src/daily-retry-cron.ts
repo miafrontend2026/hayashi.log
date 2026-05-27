@@ -15,6 +15,9 @@ export const dailyRetryCron = functions.onSchedule(
     schedule: "every day 03:00",
     timeZone: "Asia/Taipei",
     region: "asia-east1",
+    maxInstances: 1,           // 一天只跑一次,單 instance 就好
+    timeoutSeconds: 540,        // 9 分鐘上限(用戶多時可能要跑久)
+    memory: "512MiB",
   },
   async () => {
     console.log("Daily retry cron started");

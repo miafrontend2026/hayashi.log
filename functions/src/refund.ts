@@ -22,7 +22,14 @@ import {
 if (admin.apps.length === 0) admin.initializeApp();
 
 export const refund = functions.onRequest(
-  { cors: true, region: "asia-east1" },
+  {
+    cors: true,
+    region: "asia-east1",
+    maxInstances: 5,           // 退費頻率低,5 個夠
+    timeoutSeconds: 120,        // 要 call 綠界 API,給 2 分鐘餘裕
+    memory: "256MiB",
+    concurrency: 40,
+  },
   async (req, res) => {
     try {
       if (req.method !== "POST") {

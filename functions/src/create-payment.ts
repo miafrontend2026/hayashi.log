@@ -18,7 +18,14 @@ import {
 if (admin.apps.length === 0) admin.initializeApp();
 
 export const createPayment = functions.onRequest(
-  { cors: true, region: "asia-east1" },
+  {
+    cors: true,
+    region: "asia-east1",
+    maxInstances: 10,        // 防 DDoS 同時最多 10 個實例
+    timeoutSeconds: 30,       // 30 秒沒回應就終止(綠界 API 通常 1-3 秒)
+    memory: "256MiB",
+    concurrency: 80,          // 單實例最多並發 80 個 request,夠了
+  },
   async (req, res) => {
     try {
       if (req.method !== "POST") {
