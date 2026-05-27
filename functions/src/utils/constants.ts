@@ -65,6 +65,8 @@ export function ecpayConfig() {
     // 綠界 ECPay 的 callback URL — stayjp.study 是 GitHub Pages,沒有 /api/* proxy
     // 改用 Cloud Function 直接 public URL
     callbackUrl: process.env.ECPAY_CALLBACK_URL || "https://ecpaycallback-lsd7okt5qa-de.a.run.app",
+    // user POST redirect URL — ECPay 結帳完把 user 送到這個 function,function 302 轉到 account.html
+    returnUrl: process.env.ECPAY_RETURN_URL || "https://ecpayreturn-lsd7okt5qa-de.a.run.app",
   };
 }
 

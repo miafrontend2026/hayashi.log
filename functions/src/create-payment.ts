@@ -90,7 +90,8 @@ export const createPayment = functions.onRequest(
         // ── 通知 URL ──
         ReturnURL: cfg.callbackUrl,
         // ↑ ReturnURL 必須是 server-to-server callback,直接打 Cloud Function URL
-        OrderResultURL: `${cfg.siteOrigin}/account.html?from=ecpay`,
+        OrderResultURL: cfg.returnUrl,
+        // ↑ user POST 過來,function 302 轉到 account.html (GitHub Pages 不接受 POST)
         ClientBackURL: `${cfg.siteOrigin}/pricing.html`,
         // ── 自訂帶回(callback 用來識別)──
         CustomField1: uid,

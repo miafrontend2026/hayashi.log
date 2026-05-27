@@ -11,6 +11,7 @@
 
 export { createPayment } from "./create-payment";
 export { ecpayCallback } from "./ecpay-callback";
+export { ecpayReturn } from "./ecpay-return";
 export { refund } from "./refund";
 export { precheck } from "./precheck-http";
 export { chargeback } from "./chargeback";
