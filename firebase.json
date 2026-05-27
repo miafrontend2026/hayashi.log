@@ -2,6 +2,14 @@
   "firestore": {
     "rules": "firestore.rules"
   },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "ignore": ["node_modules", ".git", "firebase-debug.log", "firebase-debug.*.log"],
+      "predeploy": ["npm --prefix \"$RESOURCE_DIR\" run build"]
+    }
+  ],
   "hosting": {
     "public": ".",
     "ignore": [
@@ -9,6 +17,7 @@
       ".firebaserc",
       "**/.*",
       "**/node_modules/**",
+      "functions/**",
       "package.json",
       "package-lock.json",
       "scripts/**",
@@ -18,6 +27,14 @@
     ],
     "cleanUrls": true,
     "trailingSlash": false,
+    "rewrites": [
+      { "source": "/api/ecpay-callback", "function": { "functionId": "ecpayCallback", "region": "asia-east1" } },
+      { "source": "/api/ecpay-chargeback", "function": { "functionId": "chargeback", "region": "asia-east1" } },
+      { "source": "/api/revenuecat-webhook", "function": { "functionId": "revenuecatWebhook", "region": "asia-east1" } },
+      { "source": "/api/create-payment", "function": { "functionId": "createPayment", "region": "asia-east1" } },
+      { "source": "/api/refund", "function": { "functionId": "refund", "region": "asia-east1" } },
+      { "source": "/api/precheck", "function": { "functionId": "precheck", "region": "asia-east1" } }
+    ],
     "headers": [
       {
         "source": "sw.js",

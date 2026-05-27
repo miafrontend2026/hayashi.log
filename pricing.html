@@ -108,7 +108,7 @@ a:hover{text-decoration:underline}
   <!-- === 四付費方案 === -->
   <div class="plans">
 
-    <div class="plan">
+    <div class="plan" data-plan="monthly">
       <div class="plan-name">月費訂閱</div>
       <div class="plan-tag">先試一個月再說</div>
       <div class="plan-price"><span class="currency">NT$</span>149<span class="unit">/ 月</span></div>
@@ -118,10 +118,10 @@ a:hover{text-decoration:underline}
         <li>隨時可改成年費鎖長期優惠</li>
         <li>所有 Premium 功能</li>
       </ul>
-      <a class="plan-cta" href="contact.html">即將開放</a>
+      <a class="plan-cta" href="javascript:void(0)" onclick="return startSubscribe(this)">訂閱</a>
     </div>
 
-    <div class="plan featured">
+    <div class="plan featured" data-plan="yearly">
       <div class="plan-name">年費訂閱 <span class="save-badge">省 17%</span></div>
       <div class="plan-tag">長期備考首選</div>
       <div class="plan-price"><span class="currency">NT$</span>1,490<span class="unit">/ 年</span></div>
@@ -132,10 +132,10 @@ a:hover{text-decoration:underline}
         <li>一次付清 12 個月，省心</li>
         <li>隨時可取消，到期後不續扣</li>
       </ul>
-      <a class="plan-cta" href="contact.html">即將開放</a>
+      <a class="plan-cta" href="javascript:void(0)" onclick="return startSubscribe(this)">訂閱</a>
     </div>
 
-    <div class="plan best">
+    <div class="plan best" data-plan="yearly_early_bird">
       <div class="plan-name">🐦 早期鳥年費</div>
       <div class="plan-tag">限前 100 訂戶 · <strong style="color:#D946EF">終身鎖價 forever</strong></div>
       <div class="plan-price"><span class="currency">NT$</span>990<span class="unit">/ 年</span></div>
@@ -146,10 +146,10 @@ a:hover{text-decoration:underline}
         <li>適合認同產品想長期支持的鐵粉</li>
         <li>名額用完就沒了</li>
       </ul>
-      <a class="plan-cta" href="contact.html">即將開放</a>
+      <a class="plan-cta" href="javascript:void(0)" onclick="return startSubscribe(this)">訂閱</a>
     </div>
 
-    <div class="plan lifetime">
+    <div class="plan lifetime" data-plan="lifetime">
       <div class="plan-name">終身方案</div>
       <div class="plan-tag">一次付清 · 永不續扣 · 永久解鎖</div>
       <div class="plan-price"><span class="currency">NT$</span>2,990</div>
@@ -161,7 +161,7 @@ a:hover{text-decoration:underline}
         <li>跨裝置雲端同步</li>
         <li><strong>限定範圍：JLPT N5-N1 全部內容 + 現有工具</strong></li>
       </ul>
-      <a class="plan-cta" href="contact.html">即將開放</a>
+      <a class="plan-cta" href="javascript:void(0)" onclick="return startSubscribe(this)">訂閱</a>
     </div>
 
   </div>
@@ -220,5 +220,124 @@ a:hover{text-decoration:underline}
 </footer>
 
 <script src="counter.js"></script>
+
+<!-- Firebase Auth + Firestore — 訂閱按鈕需要登入身分送 idToken 給 Cloud Function -->
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+<script>
+const fbConfig = {
+  apiKey: "AIzaSyDnmg2XOuvwgE8m8xCF5sS4o0nQYoUplPI",
+  authDomain: "jpnote-1bdd6.firebaseapp.com",
+  projectId: "jpnote-1bdd6",
+  storageBucket: "jpnote-1bdd6.firebasestorage.app",
+  messagingSenderId: "666368174384"
+};
+if (!firebase.apps.length) firebase.initializeApp(fbConfig);
+const _db = firebase.firestore();
+const _auth = firebase.auth();
+
+// 早鳥剩餘名額顯示
+(async () => {
+  try {
+    const snap = await _db.doc('counters/early_bird').get();
+    const data = snap.data() || {};
+    const left = (data.limit || 100) - (data.count || 0);
+    const card = document.querySelector('.plan.best');
+    if (!card) return;
+    const name = card.querySelector('.plan-name');
+    if (name && left < 100) {
+      const indicator = document.createElement('span');
+      indicator.style.cssText = 'display:inline-block;background:#D946EF;color:#fff;font-size:11px;font-weight:700;padding:3px 10px;border-radius:999px;margin-left:6px';
+      indicator.textContent = left > 0 ? `剩 ${left} 名` : '已售完';
+      name.appendChild(indicator);
+    }
+    if (left <= 0) {
+      card.style.opacity = '0.55';
+      const cta = card.querySelector('.plan-cta');
+      if (cta) { cta.textContent = '名額已滿'; cta.onclick = null; cta.href = 'javascript:void(0)'; }
+    }
+  } catch (e) { console.warn('early bird counter load fail', e); }
+})();
+
+async function startSubscribe(btn) {
+  const card = btn.closest('.plan');
+  const plan = card?.dataset.plan;
+  if (!plan) { alert('找不到方案'); return false; }
+
+  const user = _auth.currentUser;
+  if (!user) {
+    if (confirm('請先登入 Google 帳號才能訂閱,是否前往登入?')) {
+      sessionStorage.setItem('subscribeAfterLogin', plan);
+      // 用 Google popup 登入
+      const provider = new firebase.auth.GoogleAuthProvider();
+      try {
+        await _auth.signInWithPopup(provider);
+      } catch (e) {
+        alert('登入失敗,請稍後再試。');
+        return false;
+      }
+    } else {
+      return false;
+    }
+  }
+
+  const u = _auth.currentUser;
+  if (!u) return false;
+
+  btn.textContent = '處理中…';
+  btn.style.pointerEvents = 'none';
+  try {
+    const idToken = await u.getIdToken();
+    const res = await fetch('/api/create-payment', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + idToken,
+      },
+      body: JSON.stringify({ plan }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.reason || data.error || '建立訂單失敗');
+      btn.textContent = '訂閱';
+      btn.style.pointerEvents = '';
+      return false;
+    }
+
+    // 自動 submit form 到綠界
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = data.endpoint;
+    form.style.display = 'none';
+    Object.entries(data.params).forEach(([k, v]) => {
+      const input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = k;
+      input.value = String(v);
+      form.appendChild(input);
+    });
+    document.body.appendChild(form);
+    form.submit();
+  } catch (err) {
+    console.error(err);
+    alert('系統錯誤,稍後再試');
+    btn.textContent = '訂閱';
+    btn.style.pointerEvents = '';
+  }
+  return false;
+}
+
+// 登入後自動 resume(從 sessionStorage 取 pending plan)
+_auth.onAuthStateChanged(user => {
+  if (!user) return;
+  const pending = sessionStorage.getItem('subscribeAfterLogin');
+  if (pending) {
+    sessionStorage.removeItem('subscribeAfterLogin');
+    const card = document.querySelector(`.plan[data-plan="${pending}"] .plan-cta`);
+    if (card) setTimeout(() => card.click(), 300);
+  }
+});
+</script>
 </body>
 </html>

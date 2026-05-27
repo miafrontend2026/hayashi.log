@@ -37,6 +37,14 @@ service cloud.firestore {
       allow write: if false;  // 只 Cloud Function 寫
     }
 
+    // 黑名單(退費 / chargeback 紀錄)— 用 emailHash 當 doc id
+    // 只有 Cloud Function 能讀寫;前端不該知道誰在黑名單
+    match /blacklist/{emailHash} {
+      allow read: if request.auth != null &&
+                     request.auth.token.email in ['stayjpplan@gmail.com', 'abc83327@gmail.com'];
+      allow write: if false;
+    }
+
     // 意見回饋 — contact.html 表單寫入,admin.html 後台讀寫
     // 創建:登入用戶寫自己的(防偽造)
     // 讀/改/刪:僅 owner email = stayjpplan@gmail.com 或 abc83327@gmail.com
