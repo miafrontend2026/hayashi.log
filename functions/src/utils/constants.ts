@@ -62,6 +62,9 @@ export function ecpayConfig() {
     hashIV:     process.env.ECPAY_HASH_IV     || "EkRm7iFT261dpevs",
     isProduction: process.env.ECPAY_PRODUCTION === "true",
     siteOrigin: process.env.SITE_ORIGIN || "https://stayjp.study",
+    // 綠界 ECPay 的 callback URL — stayjp.study 是 GitHub Pages,沒有 /api/* proxy
+    // 改用 Cloud Function 直接 public URL
+    callbackUrl: process.env.ECPAY_CALLBACK_URL || "https://ecpaycallback-lsd7okt5qa-de.a.run.app",
   };
 }
 

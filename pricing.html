@@ -264,6 +264,11 @@ const _auth = firebase.auth();
 // 一般用戶按下會看到「即將開放」提示,不會跳到 ECPay sandbox 結帳頁
 const SUBSCRIBE_TEST_WHITELIST = ['abc83327@gmail.com', 'stayjpplan@gmail.com'];
 
+// Cloud Function endpoints(stayjp.study 走 GitHub Pages,不能用 /api/* rewrite)
+const FN_CREATE_PAYMENT = 'https://createpayment-lsd7okt5qa-de.a.run.app';
+const FN_REFUND         = 'https://refund-lsd7okt5qa-de.a.run.app';
+const FN_PRECHECK       = 'https://precheck-lsd7okt5qa-de.a.run.app';
+
 async function startSubscribe(btn) {
   const card = btn.closest('.plan');
   const plan = card?.dataset.plan;
@@ -289,7 +294,7 @@ async function startSubscribe(btn) {
   btn.style.pointerEvents = 'none';
   try {
     const idToken = await u.getIdToken();
-    const res = await fetch('/api/create-payment', {
+    const res = await fetch(FN_CREATE_PAYMENT, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

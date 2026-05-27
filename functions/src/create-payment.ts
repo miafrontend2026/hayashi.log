@@ -87,8 +87,8 @@ export const createPayment = functions.onRequest(
         ChoosePayment: "ALL",
         EncryptType: 1,
         // ── 通知 URL ──
-        ReturnURL: `${cfg.siteOrigin.replace(/^https?:\/\//, "https://")}/api/ecpay-callback`,
-        // ↑ ReturnURL 必須是 server-to-server callback,不是 user 看的頁
+        ReturnURL: cfg.callbackUrl,
+        // ↑ ReturnURL 必須是 server-to-server callback,直接打 Cloud Function URL
         OrderResultURL: `${cfg.siteOrigin}/account.html?from=ecpay`,
         ClientBackURL: `${cfg.siteOrigin}/pricing.html`,
         // ── 自訂帶回(callback 用來識別)──
@@ -102,13 +102,13 @@ export const createPayment = functions.onRequest(
         params.PeriodType = "M";
         params.Frequency = 1;
         params.ExecTimes = 99;     // 上限 99 期月費(綠界限制)
-        params.PeriodReturnURL = `${cfg.siteOrigin}/api/ecpay-callback`;
+        params.PeriodReturnURL = cfg.callbackUrl;
       } else if (plan === "yearly" || plan === "yearly_early_bird") {
         params.PeriodAmount = planInfo.price_twd;
         params.PeriodType = "Y";
         params.Frequency = 1;
         params.ExecTimes = 99;
-        params.PeriodReturnURL = `${cfg.siteOrigin}/api/ecpay-callback`;
+        params.PeriodReturnURL = cfg.callbackUrl;
       }
       // lifetime:不設 Period* 欄位,綠界當一次性付款處理
 
