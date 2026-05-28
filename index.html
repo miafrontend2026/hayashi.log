@@ -2001,6 +2001,14 @@ const Shadow = (() => {
   let _sharedAudio = null;
   function playOnce(text, onEnd) {
     if (paused) return;
+    // ToolQuota:每句念 1 次算 1 次跟讀(免費版每天 3 句,超過會擋並停止播放)
+    if (typeof window.ToolQuota !== 'undefined' && window.ToolQuota.shouldGate && window.ToolQuota.shouldGate()) {
+      if (!window.ToolQuota.consumeShadowOrBlock()) {
+        paused = true;
+        if (onEnd) onEnd();
+        return;
+      }
+    }
     const hash = window.__TTS && window.__TTS[text];
     let finished = false;
     const safeEnd = () => {

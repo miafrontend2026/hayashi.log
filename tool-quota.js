@@ -1,17 +1,18 @@
 // ========================================================================
-// tool-quota.js — Freemium 工具額度限制
+// tool-quota.js — Freemium 工具額度限制(按「實際使用」計數版本)
+//
+// 設計改版 (2026-05-29):
+//   - 改成按 ACTION 計數(每答 1 張卡 / 念 1 句 / 答 1 題 = +1),不是 session
+//   - 額度收緊讓用戶嚐到甜頭就被擋 → 引導付費
+//   - 關掉重開不會 reset(localStorage 跟日期綁定,午夜 reset)
 //
 // 設計原則:
 //   1. **不影響線上使用者** — 只對白名單 owner email 啟動 gating
-//      (其他 user 完全沒感覺,所有 tool 維持原本無限制行為)
-//   2. 訂閱中 = unlimited(跳過 quota check)
-//   3. 免費版 = SRS / 跟讀 / 動詞變化練習 各 3 次/天,模考每等級 1 套
+//   2. 訂閱中 = unlimited
+//   3. 免費版 SRS/快速背單字 共享 3 卡/天,跟讀 3 句/天,動詞 3 題/天,模考 1 套/等級 lifetime
 //
-// 等正式金流 ready + 想開放給所有 user 時,把 isOwner() 改成 isFreeTier()
-// (= 登入 user 且 not premium)即可。
-//
-// load 順序:在 firebase-auth + firebase-firestore compat scripts 之後,
-// 在各 tool module (FlashCard / Shadow / MockExam / GrammarDrill / SRS) 之後。
+// 等正式金流 ready + 想開放給所有 user 時,把 isOwner() 邏輯改成
+// 「登入 user 且 not premium」即可。
 // ========================================================================
 
 (function() {
@@ -20,7 +21,12 @@
     'stayjpplan@gmail.com',
   ]);
 
-  const DAILY_LIMIT = 3;
+  // 額度設定
+  const LIMITS = {
+    vocab:     3,   // SRS + 快速背單字 共用(每張答完算 1)
+    shadow:    3,   // 跟讀(每句念完算 1)
+    conjugate: 3,   // 動詞變化練習(每題答完算 1)
+  };
 
   function dateKey() {
     const d = new Date();
@@ -45,32 +51,27 @@
     return (cachedSub.expiresAt || 0) > Date.now();
   }
 
-  // 是否對當前用戶啟動 quota 限制?
-  // 為 false → 所有 tool 維持原本行為(完全不擋)
   function shouldGate() {
-    if (!authReady) return false;          // 還沒登入狀態 → 不擋,避免錯擋訪客
-    if (!cachedUserEmail) return false;    // 未登入 → 不擋
-    if (!QUOTA_WHITELIST.has(cachedUserEmail)) return false; // 非 owner → 不擋
-    if (isPremium()) return false;          // Premium → 不擋
+    if (!authReady) return false;
+    if (!cachedUserEmail) return false;
+    if (!QUOTA_WHITELIST.has(cachedUserEmail)) return false;
+    if (isPremium()) return false;
     return true;
   }
 
   function canUse(tool) {
     if (!shouldGate()) return true;
-    if (tool === 'mock_exam_n5' || tool === 'mock_exam_n4' || tool === 'mock_exam_n3'
-        || tool === 'mock_exam_n2' || tool === 'mock_exam_n1') {
-      // 模考:每等級 1 套(lifetime,不依日期)
+    if (tool.startsWith('mock_exam_')) {
       return localStorage.getItem('mock_completed_' + tool.replace('mock_exam_', '')) !== '1';
     }
-    return (loadCount()[tool] || 0) < DAILY_LIMIT;
+    const limit = LIMITS[tool];
+    if (!limit) return true; // 未知工具不擋
+    return (loadCount()[tool] || 0) < limit;
   }
 
   function consume(tool) {
     if (!shouldGate()) return;
-    if (tool.startsWith('mock_exam_')) {
-      // 模考 lifetime flag,在 exam 完成才 set,不在這
-      return;
-    }
+    if (tool.startsWith('mock_exam_')) return; // 模考另外標記
     const counts = loadCount();
     counts[tool] = (counts[tool] || 0) + 1;
     saveCount(counts);
@@ -86,42 +87,22 @@
 
   function showPaywall(tool) {
     const labels = {
-      srs: 'SRS 複習',
-      flashcard: '快速背單字',
-      shadow: '跟讀',
+      vocab: '單字背誦(SRS / 快速背單字)',
+      shadow: '跟讀練習',
       conjugate: '動詞變化練習',
     };
-    const label = tool.startsWith('mock_exam_') ? `${tool.replace('mock_exam_', '').toUpperCase()} 模擬考` : (labels[tool] || tool);
-    if (confirm(
-      `你的「${label}」免費額度用完囉!\n\n` +
-      (tool.startsWith('mock_exam_')
-        ? '免費版每等級可試 1 套模考。\n升級 Premium 解鎖無限次 + 完整詳解。'
-        : `免費版每天 ${DAILY_LIMIT} 次,明天會 reset。\n升級 Premium 解鎖無限次。`) +
-      `\n\n要看訂閱方案嗎?`
-    )) {
+    const label = tool.startsWith('mock_exam_')
+      ? `${tool.replace('mock_exam_', '').toUpperCase()} 模擬考`
+      : (labels[tool] || tool);
+    const msg = tool.startsWith('mock_exam_')
+      ? '免費版每等級只能試 1 套模考,你已經完成過了。\n升級 Premium 可無限做模考 + 詳解 + 錯題回顧。'
+      : `免費版每天 ${LIMITS[tool]} 次,你用完了。\n升級 Premium 無限次使用,還能跨裝置同步。`;
+    if (confirm(`🚫 ${label} 免費額度用完\n\n${msg}\n\n要看訂閱方案嗎?`)) {
       window.location.href = 'pricing.html';
     }
   }
 
-  // 包裝 tool 入口:wrapper 在 call 時動態檢查,即使 page load 時 user 還沒 ready 也安全
-  function gate(obj, method, toolName) {
-    if (!obj || typeof obj[method] !== 'function') {
-      console.warn(`[ToolQuota] Cannot gate ${method}: object or method missing`);
-      return;
-    }
-    const orig = obj[method];
-    obj[method] = function(...args) {
-      // 動態 check(每次 call 都重新判)
-      if (!canUse(toolName)) {
-        showPaywall(toolName);
-        return;
-      }
-      consume(toolName);
-      return orig.apply(this, args);
-    };
-  }
-
-  // ── UI badge:顯示「今日 SRS 1/3 跟讀 0/3...」給 owner ──
+  // ── UI badge ──
   function refreshBadge() {
     let badge = document.getElementById('quotaBadge');
     if (!shouldGate()) {
@@ -137,103 +118,123 @@
       document.body.appendChild(badge);
     }
     const c = loadCount();
-    const subInfo = isPremium() ? '✅ Premium' : '🆓 免費版';
+    const tag = isPremium() ? '✅ Premium' : '🆓 免費版';
     badge.innerHTML = `
-      <div style="font-weight:700;margin-bottom:4px">${subInfo} · 今日額度</div>
-      <div>SRS: ${(c.srs || 0)}/${DAILY_LIMIT} · 背單: ${(c.flashcard || 0)}/${DAILY_LIMIT}</div>
-      <div>跟讀: ${(c.shadow || 0)}/${DAILY_LIMIT} · 動詞: ${(c.conjugate || 0)}/${DAILY_LIMIT}</div>
+      <div style="font-weight:700;margin-bottom:4px">${tag} · 今日額度</div>
+      <div>單字: ${(c.vocab || 0)}/${LIMITS.vocab} · 跟讀: ${(c.shadow || 0)}/${LIMITS.shadow}</div>
+      <div>動詞: ${(c.conjugate || 0)}/${LIMITS.conjugate}</div>
     `;
   }
 
-  // ── Firestore subscription watcher ──
+  // ── Firestore 訂閱監聽 ──
   function watchSubscription() {
-    if (typeof firebase === 'undefined' || !firebase.auth) {
-      console.warn('[ToolQuota] firebase not loaded — gating disabled');
-      return;
-    }
+    if (typeof firebase === 'undefined' || !firebase.auth) return;
     firebase.auth().onAuthStateChanged(user => {
       authReady = true;
-      if (!user) {
-        cachedUserEmail = null;
-        cachedSub = null;
-        refreshBadge();
-        return;
-      }
+      if (!user) { cachedUserEmail = null; cachedSub = null; refreshBadge(); return; }
       cachedUserEmail = user.email || null;
-      if (!QUOTA_WHITELIST.has(cachedUserEmail || '')) {
-        refreshBadge();
-        return;
-      }
-      // owner 才訂閱 subscription doc
+      if (!QUOTA_WHITELIST.has(cachedUserEmail || '')) { refreshBadge(); return; }
       firebase.firestore().doc('users/' + user.uid).onSnapshot(snap => {
         cachedSub = snap.data()?.subscription || null;
         refreshBadge();
-        applyGating();   // 訂閱狀態變了重新套用 wrapper
-      }, err => {
-        console.warn('[ToolQuota] subscription watch error:', err);
-      });
+        applyGating();
+      }, err => console.warn('[ToolQuota] sub watch error:', err));
     });
   }
 
-  // ── 套 wrapper 到 tool 模組 ──
-  // wrappersApplied flag 避免重複包(idempotent)
+  // ── 包 wrapper ──
   const wrapped = new Set();
+
+  function wrapStart(obj, method, toolName) {
+    // start 只做 pre-check(看開不開得了),不 consume
+    if (!obj || typeof obj[method] !== 'function') return;
+    const key = method + '@start@' + toolName;
+    if (wrapped.has(key)) return;
+    const orig = obj[method];
+    obj[method] = function(...args) {
+      if (!canUse(toolName)) { showPaywall(toolName); return; }
+      return orig.apply(this, args);
+    };
+    wrapped.add(key);
+  }
+
+  function wrapAction(obj, method, toolName) {
+    // action 每次呼叫 +1,超過就擋
+    if (!obj || typeof obj[method] !== 'function') return;
+    const key = method + '@action@' + toolName;
+    if (wrapped.has(key)) return;
+    const orig = obj[method];
+    obj[method] = function(...args) {
+      if (!canUse(toolName)) { showPaywall(toolName); return; }
+      consume(toolName);
+      return orig.apply(this, args);
+    };
+    wrapped.add(key);
+  }
+
   function applyGating() {
-    function wrap(obj, method, name, label) {
-      const key = label + '.' + method;
-      if (wrapped.has(key)) return;
-      if (!obj || typeof obj[method] !== 'function') return;
-      gate(obj, method, name);
-      wrapped.add(key);
+    // ── SRS / 快速背單字 共用 vocab bucket ──
+    if (typeof window.SRS !== 'undefined') {
+      wrapStart(window.SRS, 'start', 'vocab');
+      wrapAction(window.SRS, 'rate', 'vocab');     // 每張答完計 1
+      wrapAction(window.SRS, 'recordGrade', 'vocab');
     }
-    if (typeof window.SRS !== 'undefined') wrap(window.SRS, 'start', 'srs', 'SRS');
-    if (typeof window.FlashCard !== 'undefined') wrap(window.FlashCard, 'start', 'flashcard', 'FlashCard');
+    if (typeof window.FlashCard !== 'undefined') {
+      wrapStart(window.FlashCard, 'start', 'vocab');
+      wrapStart(window.FlashCard, 'beginToday', 'vocab');
+      wrapAction(window.FlashCard, 'answer', 'vocab');  // 每張答完計 1
+    }
+
+    // ── 跟讀 ──
     if (typeof window.Shadow !== 'undefined') {
-      wrap(window.Shadow, 'start', 'shadow', 'Shadow');
-      wrap(window.Shadow, 'startCurrent', 'shadow', 'Shadow');
-      wrap(window.Shadow, 'startFavs', 'shadow', 'Shadow');
+      wrapStart(window.Shadow, 'start', 'shadow');
+      wrapStart(window.Shadow, 'startCurrent', 'shadow');
+      wrapStart(window.Shadow, 'startFavs', 'shadow');
+      // playOnce / step 不在 export 內,改在 index.html 內 playOnce 直接呼 ToolQuota.consume
     }
-    if (typeof window.GrammarDrill !== 'undefined') wrap(window.GrammarDrill, 'start', 'conjugate', 'GrammarDrill');
-    // 模考 wrap MockExam.start(進入挑選等級畫面)— 進入後再依等級擋
-    if (typeof window.MockExam !== 'undefined') {
-      const origMockStart = window.MockExam.start;
-      if (origMockStart && !wrapped.has('MockExam.start')) {
-        window.MockExam.start = function(...args) {
-          // 等級在後續 startSection 才知道,所以 start 不擋,在 startSection 包
-          return origMockStart.apply(this, args);
-        };
-        wrapped.add('MockExam.start');
-      }
-      const origMockSection = window.MockExam.startSection;
-      if (origMockSection && !wrapped.has('MockExam.startSection')) {
+
+    // ── 動詞變化練習 ──
+    if (typeof window.GrammarDrill !== 'undefined') {
+      wrapStart(window.GrammarDrill, 'start', 'conjugate');
+      wrapAction(window.GrammarDrill, 'rate', 'conjugate');       // SRS-style drill
+      wrapAction(window.GrammarDrill, 'answerQuiz', 'conjugate'); // quiz-style drill
+    }
+
+    // ── 模考 ──
+    if (typeof window.MockExam !== 'undefined' && window.MockExam.startSection) {
+      const key = 'MockExam.startSection';
+      if (!wrapped.has(key)) {
+        const orig = window.MockExam.startSection;
         window.MockExam.startSection = function(...args) {
-          // 假設 currentLevel 存在 window.MockExam.currentLevel 或 args 第一個
           const lv = (window.MockExam.currentLevel || args[0] || 'n5').toLowerCase();
-          if (!canUse('mock_exam_' + lv)) {
-            showPaywall('mock_exam_' + lv);
-            return;
-          }
-          // 不在這 consume,等 exam 真完成才 mark mock_completed_lv
-          return origMockSection.apply(this, args);
+          if (!canUse('mock_exam_' + lv)) { showPaywall('mock_exam_' + lv); return; }
+          return orig.apply(this, args);
         };
-        wrapped.add('MockExam.startSection');
+        wrapped.add(key);
       }
     }
   }
 
-  // 提供 API 讓 mock-exam 完成時呼叫
   function markMockCompleted(level) {
     if (!shouldGate()) return;
     localStorage.setItem('mock_completed_' + level.toLowerCase(), '1');
     refreshBadge();
   }
 
+  // ── Shadow 跟讀 per-sentence 計數(由 index.html 內的 playOnce 主動呼)──
+  function consumeShadowOrBlock() {
+    // 給 Shadow.playOnce 在每句開始播之前呼;若回 false 表示已超額,Shadow 應停止
+    if (!canUse('shadow')) { showPaywall('shadow'); return false; }
+    consume('shadow');
+    return true;
+  }
+
   window.ToolQuota = {
-    canUse, consume, used, showPaywall, gate,
+    canUse, consume, used, showPaywall,
     shouldGate, isPremium,
     markMockCompleted,
+    consumeShadowOrBlock,
     refreshBadge,
-    // debug helpers
     _resetToday: () => { localStorage.removeItem('tool_usage_' + dateKey()); refreshBadge(); },
     _resetMock: () => {
       ['n5','n4','n3','n2','n1'].forEach(lv => localStorage.removeItem('mock_completed_' + lv));
@@ -241,17 +242,12 @@
     },
   };
 
-  // 啟動
   function init() {
     watchSubscription();
-    // 等 module IIFE 都 evaluate 完才包(他們在 page 末尾 load)
     setTimeout(applyGating, 100);
-    setTimeout(applyGating, 1000);  // 防 lazy loaded module
+    setTimeout(applyGating, 1000);
     setTimeout(refreshBadge, 200);
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
-    init();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
 })();
