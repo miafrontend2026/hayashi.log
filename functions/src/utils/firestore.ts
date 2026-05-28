@@ -71,6 +71,22 @@ export async function patchSubscription(
   await db.doc(`users/${uid}`).update(updates);
 }
 
+/**
+ * 取最近一筆成功 charge transaction(subscribe / renew),回傳 ECPay TradeNo。
+ * 退費 / cancel 用這個,不能用 subscription.ecpay_order(那是 MerchantTradeNo)。
+ */
+export async function getLatestSuccessTradeNo(uid: string): Promise<string | null> {
+  const snap = await db.collection("transactions")
+    .where("uid", "==", uid)
+    .where("status", "==", "success")
+    .where("type", "in", ["subscribe", "renew"])
+    .orderBy("occurred_at", "desc")
+    .limit(1)
+    .get();
+  if (snap.empty) return null;
+  return (snap.docs[0].data().external_id as string) || null;
+}
+
 // ───── transactions (append-only 帳本) ──────────────────────────────────
 
 export type TxnType =

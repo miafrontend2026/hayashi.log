@@ -99,15 +99,22 @@ export const ecpayCallback = functions.onRequest(
         }
 
         // 寫 / 更新 subscription
+        // expiresAt 加 5 年上限,防 sandbox / bug 累積失控
+        const MAX_EXPIRES_MS = nowMs() + 5 * 365 * 24 * 60 * 60 * 1000;
         const newExpiresAt = plusDays(nowMs(), planInfo.period_days);
+        const proposedExpiresAt = existingSub?.status === "active"
+          ? plusDays(existingSub.expiresAt, planInfo.period_days)   // 續扣:加一期
+          : newExpiresAt;
+        const capExpiresAt = Math.min(proposedExpiresAt, MAX_EXPIRES_MS);
+
         const newSub: SubscriptionDoc = {
           source: "web",
           plan,
           status: "active",
-          expiresAt: existingSub?.status === "active"
-            ? plusDays(existingSub.expiresAt, planInfo.period_days)   // 續扣:加一期
-            : newExpiresAt,
-          willRenew: true,
+          expiresAt: plan === "lifetime"
+            ? plusDays(nowMs(), planInfo.period_days)   // lifetime 直接 now + 100 年
+            : capExpiresAt,
+          willRenew: plan !== "lifetime",
           startedAt: existingSub?.startedAt || nowMs(),
           ecpay_order: merchantTradeNo,
           is_early_bird: isEarlyBird || existingSub?.is_early_bird === true,

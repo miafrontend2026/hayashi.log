@@ -77,9 +77,18 @@ export function ecpayEndpoint() {
     : "https://payment-stage.ecpay.com.tw/Cashier/AioCheckOut/V5";
 }
 
+// 信用卡單筆退費 / 取消授權 — DoAction Action=R / E / N (限該筆 TradeNo)
 export function ecpayRefundEndpoint() {
   const cfg = ecpayConfig();
   return cfg.isProduction
     ? "https://payment.ecpay.com.tw/CreditDetail/DoAction"
     : "https://payment-stage.ecpay.com.tw/CreditDetail/DoAction";
+}
+
+// 定期定額 停止訂閱 — PeriodAction Action=CancelRevoke (用 MerchantTradeNo)
+export function ecpayPeriodActionEndpoint() {
+  const cfg = ecpayConfig();
+  return cfg.isProduction
+    ? "https://payment.ecpay.com.tw/Cashier/CreditCardPeriodAction"
+    : "https://payment-stage.ecpay.com.tw/Cashier/CreditCardPeriodAction";
 }

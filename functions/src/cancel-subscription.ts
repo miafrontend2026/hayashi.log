@@ -1,19 +1,14 @@
-// HTTP function:用戶在 /account.html 按 [關閉自動續訂] → 通知綠界停止續扣
+// HTTP function:用戶按 [關閉自動續訂] → 通知綠界停止定期定額
 //
-// 流程:
-//   1. 驗 Firebase Auth + 取訂閱
-//   2. App 訂戶 → 拒絕(請去 iOS Settings)
-//   3. 呼 綠界 DoAction Action=N(停止定期定額)
-//   4. 寫 transaction(type=cancel)
-//   5. subscription.willRenew=false + status="cancelled"
-//      (但 expiresAt 不變,讓 user 用到到期日)
-//
-// 跟退費的差別:取消只是不再續扣,已付的錢不退,服務用到當期到期日。
+// 修正版(2026-05-28):
+//   - 用對 API:PeriodAction Action=CancelRevoke(不是 DoAction Action=N)
+//   - 用 MerchantTradeNo(不是 TradeNo)— PeriodAction 用 MerchantTradeNo
+//   - lifetime 跳過 ECPay 呼叫(沒定期定額,只是一次性付款)
 
 import * as functions from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
 import axios from "axios";
-import { ecpayConfig, ecpayRefundEndpoint } from "./utils/constants";
+import { ecpayConfig, ecpayPeriodActionEndpoint } from "./utils/constants";
 import { checkMacValue } from "./utils/ecpay";
 import { getSubscription, patchSubscription, writeTransaction } from "./utils/firestore";
 
@@ -60,37 +55,64 @@ export const cancelSubscription = functions.onRequest(
         return;
       }
 
-      // 月費 / 年費 / 早鳥 = 有定期定額,要呼綠界停止
-      // 終身方案 = 一次性付款,沒定期定額,跳過 ECPay 直接更新狀態
+      // lifetime:沒定期定額,跳過綠界,只更新 Firestore
       const isRecurring = sub.plan !== "lifetime";
 
+      let ecpayOk = true;
+      let ecpayMsg = "";
+
       if (isRecurring && sub.ecpay_order) {
+        // 停止定期定額:CreditCardPeriodAction Action=CancelRevoke
+        // 用 MerchantTradeNo(原訂單號,不是 TradeNo)
         const cfg = ecpayConfig();
         const params: Record<string, string | number> = {
           MerchantID: cfg.merchantId,
           MerchantTradeNo: sub.ecpay_order,
-          TradeNo: sub.ecpay_order,
-          Action: "N",       // N = 停止訂閱
-          TotalAmount: 0,    // 取消用 0
+          Action: "CancelRevoke",
+          TimeStamp: Math.floor(Date.now() / 1000),
         };
         params.CheckMacValue = checkMacValue(params);
 
         try {
           const ecpayRes = await axios.post(
-            ecpayRefundEndpoint(),
+            ecpayPeriodActionEndpoint(),
             new URLSearchParams(params as Record<string, string>).toString(),
-            { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
+            { headers: { "Content-Type": "application/x-www-form-urlencoded" }, timeout: 15000 },
           );
-          console.log("ECPay cancel response:", ecpayRes.data);
-          // 即使 ECPay 失敗,還是更新 Firestore (避免下次續扣後續資料不一致)
-          // ECPay 那邊到期前可能會 retry 失敗扣款,但 ecpayCallback 會把 fail 記下來
+          ecpayMsg = String(ecpayRes.data);
+          console.log("ECPay PeriodAction CancelRevoke response:", ecpayMsg);
+          // 綠界回應格式:RtnCode=1 為成功
+          ecpayOk = /RtnCode=1\b/.test(ecpayMsg);
         } catch (e) {
-          console.warn("ECPay cancel API call failed (continuing anyway):", e);
+          ecpayOk = false;
+          ecpayMsg = String(e);
+          console.error("ECPay PeriodAction call failed:", e);
         }
       }
 
-      // 更新狀態 — willRenew=false,status="cancelled"
-      // 但 expiresAt 不變,讓 user 用到當期到期日
+      if (isRecurring && !ecpayOk) {
+        // 綠界 cancel API 失敗 → 不要更新 Firestore,避免兩邊狀態不一致
+        await writeTransaction({
+          uid,
+          type: "cancel",
+          source: "web",
+          plan: sub.plan,
+          amount_twd: 0,
+          payment_method: "ecpay",
+          external_id: sub.ecpay_order || "",
+          status: "failed",
+          note: `ECPay PeriodAction CancelRevoke failed: ${ecpayMsg}`,
+        });
+        res.status(500).json({
+          error: "ecpay_cancel_failed",
+          reason: "綠界端取消失敗,請稍後再試或聯絡客服。",
+          ecpay_response: ecpayMsg,
+        });
+        return;
+      }
+
+      // 更新 Firestore — willRenew=false,status="cancelled"
+      // expiresAt 不變,讓 user 用到當期到期日
       await patchSubscription(uid, {
         willRenew: false,
         status: "cancelled",
@@ -105,7 +127,7 @@ export const cancelSubscription = functions.onRequest(
         payment_method: "ecpay",
         external_id: sub.ecpay_order || "",
         status: "success",
-        note: "User cancelled (continues until expiresAt)",
+        note: `ECPay: ${ecpayMsg || "lifetime - no recurring to cancel"}`,
       });
 
       const expiresDate = new Date(sub.expiresAt).toLocaleDateString("zh-TW");

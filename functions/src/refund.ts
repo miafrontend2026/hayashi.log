@@ -1,13 +1,17 @@
-// HTTP function:用戶在 /account.html 按 [申請退費] → 全自動退款
+// HTTP function:用戶按 [申請退費] → 全自動退款
 //
-// 規則(全自動,零人工):
+// 修正版(2026-05-28):
+//   - 用 TradeNo 而非 MerchantTradeNo(從最近一筆 success transaction 取)
+//   - 退費對「最近一筆 charge」做,不是 plan 總金額
+//   - lifetime 7 天後完全不退(memory 規則)
+//   - 綠界退費失敗 → Firestore 不更新狀態,避免錢沒退但用戶降級
+//
+// 規則:
 //   - source=web 才接受;App 訂戶導去 iOS Settings
 //   - 7 天內首次訂閱 → 全額退,釋放早鳥名額
-//   - 7 天後仍在期間內 → 按剩餘比例退
+//   - 7 天後仍在期間內(非 lifetime)→ 按剩餘比例退最近一筆 charge
+//   - lifetime 7 天後 → 拒絕
 //   - 已過期 / 已退過 → 拒絕
-//   - 寫 transactions(amount 負值)
-//   - 記黑名單(refund_count++)
-//   - 退費滿 2 次 → permanently_blocked
 
 import * as functions from "firebase-functions/v2/https";
 import * as admin from "firebase-admin";
@@ -16,7 +20,7 @@ import { PLANS, REFUND_POLICY, ecpayConfig, ecpayRefundEndpoint } from "./utils/
 import { checkMacValue } from "./utils/ecpay";
 import {
   getSubscription, patchSubscription, writeTransaction,
-  recordRefund, releaseEarlyBird, nowMs, emailHash,
+  recordRefund, releaseEarlyBird, getLatestSuccessTradeNo, nowMs, emailHash,
 } from "./utils/firestore";
 
 if (admin.apps.length === 0) admin.initializeApp();
@@ -26,8 +30,8 @@ export const refund = functions.onRequest(
     cors: true,
     region: "asia-east1",
     invoker: "public",
-    maxInstances: 5,           // 退費頻率低,5 個夠
-    timeoutSeconds: 120,        // 要 call 綠界 API,給 2 分鐘餘裕
+    maxInstances: 5,
+    timeoutSeconds: 120,
     memory: "256MiB",
     concurrency: 40,
   },
@@ -38,14 +42,12 @@ export const refund = functions.onRequest(
         return;
       }
 
-      // 驗 Firebase Auth
       const idToken = (req.headers.authorization || "").replace(/^Bearer\s+/i, "");
       if (!idToken) { res.status(401).json({ error: "missing_auth" }); return; }
       const decoded = await admin.auth().verifyIdToken(idToken);
       const uid = decoded.uid;
       const email = decoded.email || "";
 
-      // 拿訂閱
       const sub = await getSubscription(uid);
       if (!sub) { res.status(400).json({ error: "no_subscription" }); return; }
 
@@ -57,7 +59,7 @@ export const refund = functions.onRequest(
         return;
       }
 
-      if (sub.status !== "active") {
+      if (sub.status !== "active" && sub.status !== "cancelled") {
         res.status(400).json({
           error: "not_active",
           reason: `訂閱狀態為「${sub.status}」,無可退費。`,
@@ -73,44 +75,75 @@ export const refund = functions.onRequest(
       const daysRemaining = Math.max(0, Math.floor((sub.expiresAt - now) / (24 * 60 * 60 * 1000)));
 
       let refundAmount: number;
-      if (daysSinceStart <= REFUND_POLICY.full_refund_days) {
-        refundAmount = planInfo.price_twd;          // 7 天內全退
+      let refundReason: string;
+
+      if (sub.plan === "lifetime") {
+        // Lifetime 7 天內全退,7 天後拒絕(memory 規則)
+        if (daysSinceStart <= REFUND_POLICY.full_refund_days) {
+          refundAmount = planInfo.price_twd;
+          refundReason = "終身方案 7 天內全額退";
+        } else {
+          res.status(400).json({
+            error: "lifetime_no_refund",
+            reason: "終身方案超過 7 天視為已使用,無可退費。",
+          });
+          return;
+        }
+      } else if (daysSinceStart <= REFUND_POLICY.full_refund_days) {
+        // 一般訂閱 7 天內 全退
+        refundAmount = planInfo.price_twd;
+        refundReason = "首次訂閱 7 天內全額退";
       } else {
-        // 比例退:按剩餘天數
+        // 一般訂閱 7 天後 按剩餘比例退
         refundAmount = Math.floor(planInfo.price_twd * daysRemaining / planInfo.period_days);
+        refundReason = `按剩餘 ${daysRemaining} 天比例退`;
         if (refundAmount <= 0) {
           res.status(400).json({ error: "no_refundable_amount", reason: "已用完訂閱期,無可退費。" });
           return;
         }
       }
 
-      // 呼叫綠界退費 API(DoAction)
-      const cfg = ecpayConfig();
+      // 拿最近一筆 success transaction 的 TradeNo(綠界產的交易編號)
+      const tradeNo = await getLatestSuccessTradeNo(uid);
+      if (!tradeNo) {
+        res.status(500).json({ error: "missing_trade_no", reason: "找不到對應的扣款交易,請聯絡客服。" });
+        return;
+      }
       if (!sub.ecpay_order) {
         res.status(500).json({ error: "missing_ecpay_order" });
         return;
       }
 
+      // 呼叫綠界退費 API(DoAction Action=R)
+      const cfg = ecpayConfig();
       const refundParams: Record<string, string | number> = {
         MerchantID: cfg.merchantId,
         MerchantTradeNo: sub.ecpay_order,
-        TradeNo: sub.ecpay_order,    // 退費要原 TradeNo,理想是從 transactions 取最近的 success
-        Action: "R",                 // R = Refund
+        TradeNo: tradeNo,                  // ← 必須是 ECPay TradeNo 不是 MerchantTradeNo
+        Action: "R",                       // R = Refund
         TotalAmount: refundAmount,
       };
       refundParams.CheckMacValue = checkMacValue(refundParams);
 
-      const ecpayRes = await axios.post(
-        ecpayRefundEndpoint(),
-        new URLSearchParams(refundParams as Record<string, string>).toString(),
-        { headers: { "Content-Type": "application/x-www-form-urlencoded" } },
-      );
-      console.log("ECPay refund response:", ecpayRes.data);
-
-      // 假設綠界回應格式:"1|OK" 表成功
-      const refundOk = String(ecpayRes.data).startsWith("1|");
+      let ecpayMsg = "";
+      let refundOk = false;
+      try {
+        const ecpayRes = await axios.post(
+          ecpayRefundEndpoint(),
+          new URLSearchParams(refundParams as Record<string, string>).toString(),
+          { headers: { "Content-Type": "application/x-www-form-urlencoded" }, timeout: 30000 },
+        );
+        ecpayMsg = String(ecpayRes.data);
+        console.log("ECPay refund response:", ecpayMsg);
+        // 綠界 DoAction 回應格式:RtnCode=1 為成功
+        refundOk = /RtnCode=1\b/.test(ecpayMsg);
+      } catch (e) {
+        ecpayMsg = String(e);
+        console.error("ECPay refund call failed:", e);
+      }
 
       if (!refundOk) {
+        // 綠界退費失敗 → 不要更新 Firestore,避免錢沒退用戶降級
         await writeTransaction({
           uid,
           type: "refund",
@@ -118,11 +151,15 @@ export const refund = functions.onRequest(
           plan: sub.plan,
           amount_twd: 0,
           payment_method: "ecpay",
-          external_id: sub.ecpay_order,
+          external_id: tradeNo,
           status: "failed",
-          note: `ECPay 退費失敗:${ecpayRes.data}`,
+          note: `ECPay refund failed: ${ecpayMsg}`,
         });
-        res.status(500).json({ error: "ecpay_refund_failed", details: String(ecpayRes.data) });
+        res.status(500).json({
+          error: "ecpay_refund_failed",
+          reason: "綠界退費失敗,請聯絡客服處理。",
+          ecpay_response: ecpayMsg,
+        });
         return;
       }
 
@@ -139,15 +176,13 @@ export const refund = functions.onRequest(
         plan: sub.plan,
         amount_twd: -refundAmount,
         payment_method: "ecpay",
-        external_id: sub.ecpay_order,
+        external_id: tradeNo,
         status: "refunded",
         email_hash: emailHash(email),
-        note: daysSinceStart <= REFUND_POLICY.full_refund_days
-          ? "首次訂閱 7 天內全額退"
-          : `按剩餘 ${daysRemaining} 天比例退`,
+        note: refundReason,
       });
 
-      // 早鳥首次訂閱 + 7 天內退 → 釋放名額
+      // 早鳥首次訂閱 + 7 天內全退 → 釋放名額(讓下一個 user 可以買早鳥)
       if (sub.is_early_bird && daysSinceStart <= REFUND_POLICY.full_refund_days) {
         await releaseEarlyBird().catch(e => console.warn("releaseEarlyBird fail:", e));
       }
