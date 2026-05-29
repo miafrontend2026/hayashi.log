@@ -23,9 +23,14 @@
 
   // 額度設定
   const LIMITS = {
-    vocab:     3,   // SRS + 快速背單字 共用(每張答完算 1)
-    shadow:    3,   // 跟讀(每句念完算 1)
-    conjugate: 3,   // 動詞變化練習(每題答完算 1)
+    vocab:        3,   // SRS + 快速背單字 共用(每張答完算 1)
+    shadow:       3,   // 跟讀(每句念完算 1)
+    conjugate:    3,   // 動詞變化練習(每題答完算 1)
+    quiz:         3,   // 文法 / 單字測驗(每次 start 算 1 session)
+    reading:      1,   // 讀解練習(每天 1 篇)
+    listening:    1,   // 聽力練習 + 收藏聽力測驗(共用,每天 1 題)
+    daily_story:  1,   // 今日故事(每天 1 次預覽)
+    audio_play:  10,   // 單字 / 例句語音點擊(每次喇叭 +1)
   };
 
   function dateKey() {
@@ -90,6 +95,11 @@
       vocab: '單字背誦(SRS / 快速背單字)',
       shadow: '跟讀練習',
       conjugate: '動詞變化練習',
+      quiz: '測驗',
+      reading: '讀解練習',
+      listening: '聽力練習',
+      daily_story: '今日故事',
+      audio_play: '單字語音',
     };
     const label = tool.startsWith('mock_exam_')
       ? `${tool.replace('mock_exam_', '').toUpperCase()} 模擬考`
@@ -119,10 +129,22 @@
     }
     const c = loadCount();
     const tag = isPremium() ? '✅ Premium' : '🆓 免費版';
+    function row(label, key) {
+      const used = c[key] || 0;
+      const limit = LIMITS[key];
+      const color = used >= limit ? '#EF4444' : (used >= limit - 1 ? '#F59E0B' : '#fff');
+      return `<div style="color:${color}">${label}: ${used}/${limit}</div>`;
+    }
     badge.innerHTML = `
       <div style="font-weight:700;margin-bottom:4px">${tag} · 今日額度</div>
-      <div>單字: ${(c.vocab || 0)}/${LIMITS.vocab} · 跟讀: ${(c.shadow || 0)}/${LIMITS.shadow}</div>
-      <div>動詞: ${(c.conjugate || 0)}/${LIMITS.conjugate}</div>
+      ${row('單字', 'vocab')}
+      ${row('跟讀', 'shadow')}
+      ${row('動詞', 'conjugate')}
+      ${row('測驗', 'quiz')}
+      ${row('讀解', 'reading')}
+      ${row('聽力', 'listening')}
+      ${row('故事', 'daily_story')}
+      ${row('語音', 'audio_play')}
     `;
   }
 
@@ -198,6 +220,41 @@
       wrapStart(window.GrammarDrill, 'start', 'conjugate');
       wrapAction(window.GrammarDrill, 'rate', 'conjugate');       // SRS-style drill
       wrapAction(window.GrammarDrill, 'answerQuiz', 'conjugate'); // quiz-style drill
+    }
+
+    // ── 測驗 Quiz ──
+    if (typeof window.Quiz !== 'undefined') {
+      wrapStart(window.Quiz, 'start', 'quiz');
+    }
+
+    // ── 讀解練習 ──
+    if (typeof window.Reading !== 'undefined') {
+      wrapStart(window.Reading, 'start', 'reading');
+    }
+
+    // ── 聽力練習 + 收藏聽力測驗 ──
+    if (typeof window.Listening !== 'undefined') {
+      wrapStart(window.Listening, 'start', 'listening');
+    }
+    if (typeof window.Stats !== 'undefined' && typeof window.Stats.quizFavListening === 'function') {
+      wrapStart(window.Stats, 'quizFavListening', 'listening');
+    }
+
+    // ── 今日故事 ──
+    if (typeof window.DailyStory !== 'undefined') {
+      wrapStart(window.DailyStory, 'open', 'daily_story');
+    }
+
+    // ── 單字 / 例句語音 ──
+    // window.speak 是全域 function,所有 audio 點擊都會走;每次 +1 audio_play
+    if (typeof window.speak === 'function' && !wrapped.has('window.speak')) {
+      const origSpeak = window.speak;
+      window.speak = function(...args) {
+        if (!canUse('audio_play')) { showPaywall('audio_play'); return; }
+        consume('audio_play');
+        return origSpeak.apply(this, args);
+      };
+      wrapped.add('window.speak');
     }
 
     // ── 模考 ──
