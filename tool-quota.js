@@ -194,76 +194,87 @@
     wrapped.add(key);
   }
 
+  // 重要:模組宣告用 `const FlashCard = ...` 不會掛 window.FlashCard,
+  // 但 inline onclick="FlashCard.start()" 走 global scope chain 還是讀得到。
+  // 我們用 eval 把那個 binding 抓出來(是物件 reference,改它的 method 就會影響 inline 呼叫)。
+  function getGlobal(name) {
+    try { return (0, eval)(name); } catch (e) { return undefined; }
+  }
+
   function applyGating() {
     // ── SRS / 快速背單字 共用 vocab bucket ──
-    if (typeof window.SRS !== 'undefined') {
-      wrapStart(window.SRS, 'start', 'vocab');
-      wrapAction(window.SRS, 'rate', 'vocab');     // 每張答完計 1
-      wrapAction(window.SRS, 'recordGrade', 'vocab');
+    const SRS_ = getGlobal('SRS');
+    if (SRS_) {
+      wrapStart(SRS_, 'start', 'vocab');
+      wrapAction(SRS_, 'rate', 'vocab');
+      wrapAction(SRS_, 'recordGrade', 'vocab');
     }
-    if (typeof window.FlashCard !== 'undefined') {
-      wrapStart(window.FlashCard, 'start', 'vocab');
-      wrapStart(window.FlashCard, 'beginToday', 'vocab');
-      wrapAction(window.FlashCard, 'answer', 'vocab');  // 每張答完計 1
+    const FlashCard_ = getGlobal('FlashCard');
+    if (FlashCard_) {
+      wrapStart(FlashCard_, 'start', 'vocab');
+      wrapStart(FlashCard_, 'beginToday', 'vocab');
+      wrapAction(FlashCard_, 'answer', 'vocab');
     }
 
     // ── 跟讀 ──
-    if (typeof window.Shadow !== 'undefined') {
-      wrapStart(window.Shadow, 'start', 'shadow');
-      wrapStart(window.Shadow, 'startCurrent', 'shadow');
-      wrapStart(window.Shadow, 'startFavs', 'shadow');
-      // playOnce / step 不在 export 內,改在 index.html 內 playOnce 直接呼 ToolQuota.consume
+    const Shadow_ = getGlobal('Shadow');
+    if (Shadow_) {
+      wrapStart(Shadow_, 'start', 'shadow');
+      wrapStart(Shadow_, 'startCurrent', 'shadow');
+      wrapStart(Shadow_, 'startFavs', 'shadow');
+      // playOnce 由 index.html 內注入呼叫 consumeShadowOrBlock
     }
 
     // ── 動詞變化練習 ──
-    if (typeof window.GrammarDrill !== 'undefined') {
-      wrapStart(window.GrammarDrill, 'start', 'conjugate');
-      wrapAction(window.GrammarDrill, 'rate', 'conjugate');       // SRS-style drill
-      wrapAction(window.GrammarDrill, 'answerQuiz', 'conjugate'); // quiz-style drill
+    const GrammarDrill_ = getGlobal('GrammarDrill');
+    if (GrammarDrill_) {
+      wrapStart(GrammarDrill_, 'start', 'conjugate');
+      wrapAction(GrammarDrill_, 'rate', 'conjugate');
+      wrapAction(GrammarDrill_, 'answerQuiz', 'conjugate');
     }
 
     // ── 測驗 Quiz ──
-    if (typeof window.Quiz !== 'undefined') {
-      wrapStart(window.Quiz, 'start', 'quiz');
-    }
+    const Quiz_ = getGlobal('Quiz');
+    if (Quiz_) wrapStart(Quiz_, 'start', 'quiz');
 
     // ── 讀解練習 ──
-    if (typeof window.Reading !== 'undefined') {
-      wrapStart(window.Reading, 'start', 'reading');
-    }
+    const Reading_ = getGlobal('Reading');
+    if (Reading_) wrapStart(Reading_, 'start', 'reading');
 
-    // ── 聽力練習 + 收藏聽力測驗 ──
-    if (typeof window.Listening !== 'undefined') {
-      wrapStart(window.Listening, 'start', 'listening');
-    }
-    if (typeof window.Stats !== 'undefined' && typeof window.Stats.quizFavListening === 'function') {
-      wrapStart(window.Stats, 'quizFavListening', 'listening');
+    // ── 聽力 + 收藏聽力測驗 ──
+    const Listening_ = getGlobal('Listening');
+    if (Listening_) wrapStart(Listening_, 'start', 'listening');
+    const Stats_ = getGlobal('Stats');
+    if (Stats_ && typeof Stats_.quizFavListening === 'function') {
+      wrapStart(Stats_, 'quizFavListening', 'listening');
     }
 
     // ── 今日故事 ──
-    if (typeof window.DailyStory !== 'undefined') {
-      wrapStart(window.DailyStory, 'open', 'daily_story');
-    }
+    const DailyStory_ = getGlobal('DailyStory');
+    if (DailyStory_) wrapStart(DailyStory_, 'open', 'daily_story');
 
     // ── 單字 / 例句語音 ──
-    // window.speak 是全域 function,所有 audio 點擊都會走;每次 +1 audio_play
+    // `function speak(...)` 是 function declaration,既在 global scope 也在 window 上。
+    // HTML inline onclick="speak(...)" 透過 window 解析 → 覆蓋 window.speak 就會生效。
+    // 模組內部呼叫 speak() 走 global binding(沒被覆寫)→ 不計數,正合我意:工具內的音不額外算。
     if (typeof window.speak === 'function' && !wrapped.has('window.speak')) {
       const origSpeak = window.speak;
-      window.speak = function(...args) {
+      window.speak = function() {
         if (!canUse('audio_play')) { showPaywall('audio_play'); return; }
         consume('audio_play');
-        return origSpeak.apply(this, args);
+        return origSpeak.apply(this, arguments);
       };
       wrapped.add('window.speak');
     }
 
     // ── 模考 ──
-    if (typeof window.MockExam !== 'undefined' && window.MockExam.startSection) {
+    const MockExam_ = getGlobal('MockExam');
+    if (MockExam_ && MockExam_.startSection) {
       const key = 'MockExam.startSection';
       if (!wrapped.has(key)) {
-        const orig = window.MockExam.startSection;
-        window.MockExam.startSection = function(...args) {
-          const lv = (window.MockExam.currentLevel || args[0] || 'n5').toLowerCase();
+        const orig = MockExam_.startSection;
+        MockExam_.startSection = function(...args) {
+          const lv = (MockExam_.currentLevel || args[0] || 'n5').toLowerCase();
           if (!canUse('mock_exam_' + lv)) { showPaywall('mock_exam_' + lv); return; }
           return orig.apply(this, args);
         };

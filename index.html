@@ -2339,6 +2339,13 @@ const DailyStory = (() => {
   }
 
   async function playAll() {
+    // 在播 → 視為「暫停」鍵,停止後不再重啟
+    if (_playing) {
+      stopAudio();
+      const btn = document.getElementById('dsPlayAll');
+      if (btn) btn.textContent = '🔊 播放整段';
+      return;
+    }
     const story = STORIES[getStoryId()];
     if (!story) return;
     stopAudio();
