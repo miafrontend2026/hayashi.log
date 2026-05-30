@@ -193,11 +193,9 @@
     };
   }
 
-  // 重要:模組宣告用 `const FlashCard = ...` 不會掛 window.FlashCard,
-  // 但 inline onclick="FlashCard.start()" 走 global scope chain 還是讀得到。
-  // 我們用 eval 把那個 binding 抓出來(是物件 reference,改它的 method 就會影響 inline 呼叫)。
+  // 模組由 index.html 顯式掛到 window(top-level const 不會自動掛 globalThis)
   function getGlobal(name) {
-    try { return (0, eval)(name); } catch (e) { return undefined; }
+    return window[name];
   }
 
   function applyGating() {

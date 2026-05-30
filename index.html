@@ -3286,6 +3286,20 @@ function switchBottomTab(btn) {
 <script src="flashcard.js"></script>
 <script src="virtual-list.js"></script>
 <script src="calendar.js"></script>
+<script>
+  // 把所有 const-declared modules 顯式掛到 window,讓 tool-quota.js 可以可靠抓到
+  // (top-level const 不會自動掛 globalThis,indirect eval 也讀不到)
+  try { window.FlashCard = FlashCard; } catch (e) {}
+  try { window.SRS = SRS; } catch (e) {}
+  try { window.Shadow = Shadow; } catch (e) {}
+  try { window.DailyStory = DailyStory; } catch (e) {}
+  try { window.MockExam = MockExam; } catch (e) {}
+  try { window.GrammarDrill = GrammarDrill; } catch (e) {}
+  try { window.Quiz = Quiz; } catch (e) {}
+  try { window.Reading = Reading; } catch (e) {}
+  try { window.Listening = Listening; } catch (e) {}
+  try { window.Stats = Stats; } catch (e) {}
+</script>
 <script src="tool-quota.js"></script>
 <!-- Cloudflare Web Analytics --><script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon="{&quot;token&quot;: &quot;0a94a20c2737440a86f55c4241011f68&quot;}"></script><!-- End Cloudflare Web Analytics -->
 </body>
