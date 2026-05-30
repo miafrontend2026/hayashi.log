@@ -122,8 +122,8 @@ export const ecpayCallback = functions.onRequest(
         };
         await writeSubscription(uid, newSub);
 
-        // 寫 transaction
-        await writeTransaction({
+        // 寫 transaction(Firestore 不接受 undefined,有值才放)
+        const txn: Parameters<typeof writeTransaction>[0] = {
           uid,
           type: isFirstPayment ? "subscribe" : "renew",
           source: "web",
@@ -132,9 +132,10 @@ export const ecpayCallback = functions.onRequest(
           payment_method: "ecpay",
           external_id: tradeNo || merchantTradeNo,
           status: "success",
-          invoice_no: body.InvoiceNo || undefined,
           note: rtnMsg,
-        });
+        };
+        if (body.InvoiceNo) txn.invoice_no = body.InvoiceNo;
+        await writeTransaction(txn);
 
         console.log("✓ ECPay payment success", { uid, plan, amount, isFirstPayment });
       } else {

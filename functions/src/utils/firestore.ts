@@ -17,6 +17,8 @@ import {
 
 if (admin.apps.length === 0) admin.initializeApp();
 export const db = admin.firestore();
+// 讓 undefined 欄位被忽略,避免未來 ECPay / RevenueCat payload 漏欄位就炸 function
+db.settings({ ignoreUndefinedProperties: true });
 export const FieldValue = admin.firestore.FieldValue;
 
 // ───── helpers ─────────────────────────────────────────────────────────
