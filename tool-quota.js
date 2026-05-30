@@ -165,33 +165,32 @@
   }
 
   // ── 包 wrapper ──
-  const wrapped = new Set();
+  // 用 function 內容判斷是否已包過,而非 key map(避免 method+toolName 重複時誤判)
+  function isAlreadyWrapped(fn) {
+    return typeof fn === 'function' && fn.toString().includes('__TQ_WRAPPED__');
+  }
 
   function wrapStart(obj, method, toolName) {
-    // start 只做 pre-check(看開不開得了),不 consume
     if (!obj || typeof obj[method] !== 'function') return;
-    const key = method + '@start@' + toolName;
-    if (wrapped.has(key)) return;
+    if (isAlreadyWrapped(obj[method])) return;
     const orig = obj[method];
     obj[method] = function(...args) {
+      /* __TQ_WRAPPED__ */
       if (!canUse(toolName)) { showPaywall(toolName); return; }
       return orig.apply(this, args);
     };
-    wrapped.add(key);
   }
 
   function wrapAction(obj, method, toolName) {
-    // action 每次呼叫 +1,超過就擋
     if (!obj || typeof obj[method] !== 'function') return;
-    const key = method + '@action@' + toolName;
-    if (wrapped.has(key)) return;
+    if (isAlreadyWrapped(obj[method])) return;
     const orig = obj[method];
     obj[method] = function(...args) {
+      /* __TQ_WRAPPED__ */
       if (!canUse(toolName)) { showPaywall(toolName); return; }
       consume(toolName);
       return orig.apply(this, args);
     };
-    wrapped.add(key);
   }
 
   // 重要:模組宣告用 `const FlashCard = ...` 不會掛 window.FlashCard,
@@ -257,29 +256,26 @@
     // `function speak(...)` 是 function declaration,既在 global scope 也在 window 上。
     // HTML inline onclick="speak(...)" 透過 window 解析 → 覆蓋 window.speak 就會生效。
     // 模組內部呼叫 speak() 走 global binding(沒被覆寫)→ 不計數,正合我意:工具內的音不額外算。
-    if (typeof window.speak === 'function' && !wrapped.has('window.speak')) {
+    if (typeof window.speak === 'function' && !isAlreadyWrapped(window.speak)) {
       const origSpeak = window.speak;
       window.speak = function() {
+        /* __TQ_WRAPPED__ */
         if (!canUse('audio_play')) { showPaywall('audio_play'); return; }
         consume('audio_play');
         return origSpeak.apply(this, arguments);
       };
-      wrapped.add('window.speak');
     }
 
     // ── 模考 ──
     const MockExam_ = getGlobal('MockExam');
-    if (MockExam_ && MockExam_.startSection) {
-      const key = 'MockExam.startSection';
-      if (!wrapped.has(key)) {
-        const orig = MockExam_.startSection;
-        MockExam_.startSection = function(...args) {
-          const lv = (MockExam_.currentLevel || args[0] || 'n5').toLowerCase();
-          if (!canUse('mock_exam_' + lv)) { showPaywall('mock_exam_' + lv); return; }
-          return orig.apply(this, args);
-        };
-        wrapped.add(key);
-      }
+    if (MockExam_ && MockExam_.startSection && !isAlreadyWrapped(MockExam_.startSection)) {
+      const orig = MockExam_.startSection;
+      MockExam_.startSection = function(...args) {
+        /* __TQ_WRAPPED__ */
+        const lv = (MockExam_.currentLevel || args[0] || 'n5').toLowerCase();
+        if (!canUse('mock_exam_' + lv)) { showPaywall('mock_exam_' + lv); return; }
+        return orig.apply(this, args);
+      };
     }
   }
 
