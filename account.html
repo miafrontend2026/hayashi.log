@@ -459,21 +459,31 @@ function loadTransactions() {
         const t = d.data();
         const date = t.occurred_at?.toDate ? t.occurred_at.toDate().toLocaleDateString('zh-TW') : '—';
         const typeLabel = ({
-          subscribe: '訂閱',
-          renew: '續訂',
-          refund: '退費',
-          fail: '扣款失敗',
-          cancel: '取消',
+          subscribe: '✓ 訂閱成功',
+          renew: '🔁 續訂成功',
+          refund: '↩️ 退費',
+          fail: '⚠️ 扣款失敗',
+          cancel: '🛑 關閉自動續訂',
+          chargeback: '⚠️ 信用卡爭議',
+          gift: '🎁 贈送 Premium',
         })[t.type] || t.type;
+        // plan key → 人話
+        const planLabel = PLAN_LABELS[t.plan] || (t.plan && t.plan !== 'n/a' ? t.plan : '');
+        // 金額顯示:cancel / fail / chargeback 不顯示金額(零元無意義)
+        const showAmount = ['subscribe','renew','refund'].includes(t.type);
         const amt = t.amount_twd || 0;
         const amtClass = t.type === 'refund' ? 'negative' : 'positive';
         const amtPrefix = t.type === 'refund' ? '-' : '+';
+        const amtCell = showAmount && amt !== 0
+          ? `<div class="amt ${amtClass}">${amtPrefix}NT$${Math.abs(amt).toLocaleString()}</div>`
+          : `<div class="amt" style="color:var(--tx3);font-weight:400;font-size:12px">—</div>`;
+        const titleLine = planLabel ? `${typeLabel} · ${planLabel}` : typeLabel;
         return `<div class="txn">
           <div>
-            <div class="type">${typeLabel} · ${t.plan || ''}</div>
+            <div class="type">${titleLine}</div>
             <div class="date">${date}</div>
           </div>
-          <div class="amt ${amtClass}">${amtPrefix}NT$${amt.toLocaleString()}</div>
+          ${amtCell}
         </div>`;
       }).join('');
     }, err => {
